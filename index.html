@@ -365,6 +365,58 @@
             margin-top: 20px;
         }
 
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            display: none;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-top: 5px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: white;
+            font-size: 1.2em;
+            margin-top: 20px;
+            text-align: center;
+            padding: 0 20px;
+        }
+
+        .loading-subtext {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1em;
+            margin-top: 10px;
+        }
+
+        .btn:disabled, .tab:disabled, .sync-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 1.8em;
@@ -471,11 +523,14 @@
                     <input type="password" id="adminCode" placeholder="Entrer le code" class="admin-input">
                 </div>
                 <button class="btn" onclick="checkAdminAccess()">Accéder aux fonctions admin</button>
+                <button class="btn btn-secondary" onclick="logoutAdmin()" style="display: none;" id="logoutBtn">Déconnexion Admin</button>
                 
                 <div id="adminPanel" class="hidden">
                     <h3>Fonctions administrateur</h3>
-                    <button class="btn" onclick="resetYear()">🆕 Nouvelle année</button>
+                    <p style="color: #059669; margin-bottom: 20px;">✅ Mode administrateur activé - Vous pouvez maintenant modifier/supprimer les familles</p>
+                    <button class="btn" onclick="confirmResetYear()">🆕 Nouvelle année</button>
                     <button class="btn btn-secondary" onclick="exportData()">📥 Exporter les données</button>
+                    <button class="btn btn-secondary" onclick="clearAllData()" style="background: #dc2626;">🗑️ Tout effacer</button>
                     
                     <div class="error-message" style="margin-top: 20px;">
                         ⚠️ Zone sensible : Les modifications ici affectent toutes les données
@@ -483,6 +538,13 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Overlay de chargement -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Un instant...</div>
+        <div class="loading-subtext">🙏 Sois patient, Jésus t'aime</div>
     </div>
 
     <script>
@@ -523,12 +585,36 @@
             syncData();
         }
 
+        // Afficher/masquer le chargement
+        function showLoading(message = "Un instant...") {
+            const overlay = document.getElementById('loadingOverlay');
+            const text = overlay.querySelector('.loading-text');
+            text.textContent = message;
+            overlay.classList.add('active');
+            
+            // Désactiver tous les boutons
+            document.querySelectorAll('button, input, select').forEach(el => {
+                el.disabled = true;
+            });
+        }
+
+        function hideLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.classList.remove('active');
+            
+            // Réactiver tous les boutons
+            document.querySelectorAll('button, input, select').forEach(el => {
+                el.disabled = false;
+            });
+        }
+
         // Synchronisation avec Google Sheets
         async function syncData() {
             if (appState.isSyncing) return;
             
             appState.isSyncing = true;
             updateSyncStatus('syncing');
+            showLoading('Synchronisation en cours...');
             
             try {
                 // Récupération réelle depuis Google Sheets via Apps Script
@@ -567,6 +653,7 @@
                 updateSyncStatus('error');
             } finally {
                 appState.isSyncing = false;
+                hideLoading();
             }
         }
 
@@ -627,6 +714,8 @@
                 return;
             }
             
+            showLoading('Ajout de la famille...');
+            
             const newFamily = {
                 id: Date.now(),
                 name: name,
@@ -643,6 +732,7 @@
             document.getElementById('familyMembers').value = '';
             
             updateUI();
+            hideLoading();
             showSuccess('Famille ajoutée avec succès');
             
             // Resynchroniser après ajout
@@ -672,6 +762,8 @@
                 return;
             }
             
+            showLoading('Enregistrement de la dépense...');
+            
             const newExpense = {
                 id: Date.now(),
                 familyId: parseInt(payerId),
@@ -692,6 +784,7 @@
             document.getElementById('expenseDescription').value = '';
             
             updateUI();
+            hideLoading();
             showSuccess('Dépense ajoutée avec succès');
             
             // Resynchroniser après ajout
@@ -894,6 +987,7 @@
             if (code === '333') {
                 appState.isAdmin = true;
                 document.getElementById('adminPanel').classList.remove('hidden');
+                document.getElementById('logoutBtn').style.display = 'inline-block';
                 document.getElementById('adminCode').value = '';
                 showSuccess('Accès administrateur activé');
                 updateUI(); // Rafraîchir l'interface pour montrer les boutons admin
@@ -902,18 +996,69 @@
             }
         }
 
-        // Nouvelle année
-        function resetYear() {
-            if (!confirm('Êtes-vous sûr de vouloir archiver les données actuelles et commencer une nouvelle année ?')) {
+        // Déconnexion admin
+        function logoutAdmin() {
+            appState.isAdmin = false;
+            document.getElementById('adminPanel').classList.add('hidden');
+            document.getElementById('logoutBtn').style.display = 'none';
+            updateUI();
+            showSuccess('Mode administrateur désactivé');
+        }
+
+        // Confirmer la nouvelle année
+        function confirmResetYear() {
+            if (!confirm('⚠️ ATTENTION !\n\nCette action va archiver toutes les données de l\'année en cours.\nLes familles seront conservées mais toutes les dépenses seront effacées.\n\nÊtes-vous sûr de vouloir commencer une nouvelle année ?')) {
                 return;
             }
             
+            resetYear();
+        }
+
+        // Nouvelle année
+        async function resetYear() {
+            showLoading('Initialisation de la nouvelle année...');
+            
+            // Archiver l'année actuelle (garder les familles, effacer les dépenses)
             appState.currentYear = new Date().getFullYear();
             appState.expenses = [];
             
+            // Sauvegarder le changement
+            await saveToSheets('reset_year', { year: appState.currentYear });
+            
             updateUI();
-            showSuccess('Nouvelle année initialisée');
-            syncData();
+            hideLoading();
+            showSuccess(`Nouvelle année ${appState.currentYear} initialisée. Les dépenses ont été effacées.`);
+            
+            setTimeout(() => syncData(), 1000);
+        }
+
+        // Tout effacer (admin uniquement)
+        async function clearAllData() {
+            if (!appState.isAdmin) {
+                showError('Accès administrateur requis');
+                return;
+            }
+            
+            if (!confirm('⚠️ DANGER !\n\nCette action va TOUT EFFACER définitivement :\n- Toutes les familles\n- Toutes les dépenses\n- Toutes les données\n\nCette action est IRRÉVERSIBLE !\n\nÊtes-vous VRAIMENT sûr ?')) {
+                return;
+            }
+            
+            if (!confirm('🔴 DERNIÈRE CONFIRMATION\n\nTOUT sera supprimé définitivement.\n\nConfirmer la suppression totale ?')) {
+                return;
+            }
+            
+            showLoading('Suppression de toutes les données...');
+            
+            appState.families = [];
+            appState.expenses = [];
+            
+            await saveToSheets('clear_all', {});
+            
+            updateUI();
+            hideLoading();
+            showSuccess('Toutes les données ont été effacées');
+            
+            setTimeout(() => syncData(), 1000);
         }
 
         // Exporter les données
