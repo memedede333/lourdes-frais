@@ -502,10 +502,10 @@
         </div>
 
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('families')">👨‍👩‍👧‍👦 Familles</button>
-            <button class="tab" onclick="switchTab('expenses')">💰 Dépenses</button>
-            <button class="tab" onclick="switchTab('balance')">📊 Bilan</button>
-            <button class="tab" onclick="switchTab('admin')">⚙️ Admin</button>
+            <button class="tab active" onclick="switchTab('families', event)">👨‍👩‍👧‍👦 Familles</button>
+            <button class="tab" onclick="switchTab('expenses', event)">💰 Dépenses</button>
+            <button class="tab" onclick="switchTab('balance', event)">📊 Bilan</button>
+            <button class="tab" onclick="switchTab('admin', event)">⚙️ Admin</button>
         </div>
 
         <div class="content">
@@ -745,7 +745,9 @@
             document.querySelectorAll('.tab').forEach(tab => {
                 tab.classList.remove('active');
             });
-            event.target.classList.add('active');
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
             
             document.querySelectorAll('.section').forEach(section => {
                 section.classList.remove('active');
@@ -756,7 +758,9 @@
             updateUI();
             
             // Sync en arrière-plan seulement si ça fait plus de 5 secondes
-            if (!appState.lastSync || (Date.now() - appState.lastSync > 5000)) {
+            if (!appState.lastSync || (Date.now() - new Date(appState.lastSync).getTime() > 5000)) {
+                syncFromSheets();
+            }
                 syncFromSheets();
             }
         }
@@ -1375,14 +1379,20 @@
 
         // Sync au focus/visibility
         document.addEventListener('visibilitychange', () => {
-            if (!document.hidden && appState.lastSync && (Date.now() - appState.lastSync > 10000)) {
-                syncFromSheets();
+            if (!document.hidden && appState.lastSync) {
+                const timeSinceSync = Date.now() - new Date(appState.lastSync).getTime();
+                if (timeSinceSync > 10000) {
+                    syncFromSheets();
+                }
             }
         });
 
         window.addEventListener('focus', () => {
-            if (appState.lastSync && (Date.now() - appState.lastSync > 10000)) {
-                syncFromSheets();
+            if (appState.lastSync) {
+                const timeSinceSync = Date.now() - new Date(appState.lastSync).getTime();
+                if (timeSinceSync > 10000) {
+                    syncFromSheets();
+                }
             }
         });
 
