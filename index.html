@@ -12,10 +12,10 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #0066cc 0%, #87CEEB 100%);
             min-height: 100vh;
-            padding: 20px;
+            color: #1f2937;
         }
 
         .container {
@@ -25,29 +25,41 @@
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             overflow: hidden;
+            min-height: 100vh;
         }
 
         .header {
             background: linear-gradient(135deg, #0066cc 0%, #4da6ff 100%);
             color: white;
-            padding: 30px;
+            padding: 25px;
             text-align: center;
             position: relative;
         }
 
         .header h1 {
-            font-size: 2em;
+            font-size: 1.8em;
             margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .sync-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
         }
 
         .sync-status {
-            display: inline-flex;
+            display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             background: rgba(255,255,255,0.2);
             padding: 8px 15px;
             border-radius: 20px;
-            margin-top: 15px;
         }
 
         .sync-dot {
@@ -55,6 +67,7 @@
             height: 10px;
             border-radius: 50%;
             background: #4ade80;
+            animation: pulse 2s infinite;
         }
 
         .sync-dot.syncing {
@@ -62,9 +75,36 @@
             animation: pulse 0.5s infinite;
         }
 
+        .sync-dot.error {
+            background: #ef4444;
+        }
+
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        .sync-button {
+            background: white;
+            color: #0066cc;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .sync-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .sync-button:active {
+            transform: scale(0.95);
         }
 
         .tabs {
@@ -76,7 +116,7 @@
 
         .tab {
             flex: 1;
-            padding: 15px;
+            padding: 12px;
             background: white;
             border: none;
             border-radius: 10px;
@@ -95,7 +135,8 @@
         }
 
         .content {
-            padding: 30px;
+            padding: 25px;
+            padding-bottom: 100px;
         }
 
         .section {
@@ -108,8 +149,8 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .form-group {
@@ -129,11 +170,13 @@
             border: 2px solid #e5e7eb;
             border-radius: 10px;
             font-size: 16px;
+            transition: border-color 0.3s;
         }
 
         input:focus, select:focus {
             outline: none;
             border-color: #0066cc;
+            box-shadow: 0 0 0 3px rgba(0,102,204,0.1);
         }
 
         .btn {
@@ -146,6 +189,8 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
         }
 
         .btn:hover {
@@ -153,17 +198,27 @@
             box-shadow: 0 10px 20px rgba(0,102,204,0.3);
         }
 
-        .btn-small {
-            padding: 5px 15px;
-            font-size: 0.9em;
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
         }
 
         .btn-danger {
             background: #ef4444;
         }
 
-        .btn-edit {
-            background: #3b82f6;
+        .btn-success {
+            background: #10b981;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.85em;
         }
 
         .families-grid {
@@ -174,52 +229,122 @@
         }
 
         .family-card {
-            background: #f3f4f6;
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
             padding: 20px;
             border-radius: 15px;
             position: relative;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .family-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-color: #0066cc;
         }
 
         .family-name {
             font-size: 1.2em;
             font-weight: bold;
             color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .family-members {
+            color: #6b7280;
+            display: flex;
+            align-items: center;
+            gap: 5px;
             margin-bottom: 10px;
         }
 
         .family-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .family-actions.admin-only {
+            display: none;
+        }
+
+        .family-card[data-admin="true"] .family-actions.admin-only {
+            display: flex;
+        }
+
+        .delete-btn {
             position: absolute;
             top: 10px;
             right: 10px;
-            display: flex;
-            gap: 5px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2em;
+            display: none;
+            transition: all 0.2s;
+        }
+
+        .delete-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .family-card[data-admin="true"] .delete-btn {
+            display: block;
         }
 
         .expenses-list {
-            margin-top: 20px;
+            margin-top: 25px;
         }
 
         .expense-item {
             background: #f9fafb;
             padding: 15px;
             border-radius: 10px;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
         }
 
-        .expense-actions {
-            display: flex;
-            gap: 5px;
+        .expense-item:hover {
+            background: #f3f4f6;
+            border-left-color: #0066cc;
+            transform: translateX(5px);
+        }
+
+        .expense-info {
+            flex: 1;
+        }
+
+        .expense-amount {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #059669;
+            margin-right: 10px;
+        }
+
+        .balance-summary {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+        }
+
+        .balance-cards {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 25px;
         }
 
         .balance-card {
-            background: #fef3c7;
             padding: 20px;
             border-radius: 15px;
-            border-left: 5px solid #f59e0b;
-            margin-bottom: 15px;
+            border-left: 5px solid;
         }
 
         .balance-card.positive {
@@ -232,6 +357,18 @@
             border-left-color: #dc2626;
         }
 
+        .balance-card.neutral {
+            background: #fef3c7;
+            border-left-color: #f59e0b;
+        }
+
+        .transfers-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f3f4f6;
+            border-radius: 15px;
+        }
+
         .transfer-item {
             background: white;
             padding: 15px;
@@ -240,41 +377,149 @@
             display: flex;
             align-items: center;
             gap: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .admin-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.9);
+            color: #6b7280;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2em;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .admin-button:hover {
+            transform: scale(1.1);
+            background: white;
+        }
+
+        .admin-panel {
+            position: fixed;
+            bottom: 70px;
+            right: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            width: 300px;
+            z-index: 999;
+            display: none;
+        }
+
+        .admin-panel.active {
+            display: block;
+            animation: slideUp 0.3s;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
 
         .message {
             position: fixed;
-            bottom: 20px;
+            top: 20px;
             left: 50%;
             transform: translateX(-50%);
             padding: 15px 25px;
             border-radius: 10px;
-            animation: slideUp 0.3s;
-            z-index: 1000;
+            z-index: 10000;
+            animation: slideDown 0.3s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: none;
+        }
+
+        .message.show {
+            display: block;
         }
 
         .message.success {
             background: #d1fae5;
             color: #059669;
+            border: 1px solid #a7f3d0;
         }
 
         .message.error {
             background: #fee2e2;
             color: #dc2626;
+            border: 1px solid #fecaca;
         }
 
-        @keyframes slideUp {
-            from { bottom: -100px; }
-            to { bottom: 20px; }
+        @keyframes slideDown {
+            from { top: -100px; }
+            to { top: 20px; }
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 9999;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: white;
+            font-size: 1.1em;
+            margin-top: 20px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #9ca3af;
+        }
+
+        .empty-state-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+            opacity: 0.5;
         }
 
         @media (max-width: 768px) {
             .container {
                 border-radius: 0;
+                min-height: 100vh;
             }
             
             body {
                 padding: 0;
+            }
+            
+            .header h1 {
+                font-size: 1.5em;
             }
             
             .tabs {
@@ -285,10 +530,21 @@
                 background: white;
                 box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
                 z-index: 100;
+                padding: 5px;
+            }
+            
+            .tab {
+                font-size: 0.9em;
+                padding: 10px 5px;
             }
             
             .content {
-                padding-bottom: 80px;
+                padding: 20px;
+                padding-bottom: 120px;
+            }
+            
+            .families-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -297,9 +553,14 @@
     <div class="container">
         <div class="header">
             <h1>⛪ Partage des Frais - Lourdes 🙏</h1>
-            <div class="sync-status">
-                <span class="sync-dot" id="syncDot"></span>
-                <span id="syncStatus">Synchronisé</span>
+            <div class="sync-container">
+                <div class="sync-status">
+                    <span class="sync-dot" id="syncDot"></span>
+                    <span id="syncText">Synchronisé</span>
+                </div>
+                <button class="sync-button" onclick="window.forceSync()">
+                    🔄 Synchroniser
+                </button>
             </div>
         </div>
 
@@ -310,184 +571,266 @@
         </div>
 
         <div class="content">
-            <!-- Familles -->
+            <!-- Section Familles -->
             <div id="families" class="section active">
                 <h2>Gestion des Familles</h2>
+                
                 <div class="form-group">
                     <label>Nom de la famille</label>
                     <input type="text" id="familyName" placeholder="Ex: Famille Martin">
                 </div>
+                
                 <div class="form-group">
                     <label>Nombre de membres</label>
                     <input type="number" id="familyMembers" min="1" placeholder="Ex: 5">
                 </div>
-                <button class="btn" id="addFamilyBtn">Ajouter la famille</button>
+                
+                <button class="btn" id="addFamilyBtn">
+                    Ajouter la famille
+                </button>
                 
                 <div class="families-grid" id="familiesList"></div>
             </div>
 
-            <!-- Dépenses -->
+            <!-- Section Dépenses -->
             <div id="expenses" class="section">
                 <h2>Saisie des Dépenses</h2>
+                
                 <div class="form-group">
                     <label>Qui a payé ?</label>
                     <select id="expensePayer">
                         <option value="">Sélectionner une famille</option>
                     </select>
                 </div>
+                
                 <div class="form-group">
                     <label>Montant (€)</label>
                     <input type="number" id="expenseAmount" step="0.01" min="0" placeholder="Ex: 125.50">
                 </div>
+                
                 <div class="form-group">
                     <label>Description</label>
-                    <input type="text" id="expenseDescription" placeholder="Ex: Courses pour le repas">
+                    <input type="text" id="expenseDescription" placeholder="Ex: Courses pour le repas commun">
                 </div>
-                <button class="btn" id="addExpenseBtn">Ajouter la dépense</button>
+                
+                <button class="btn" id="addExpenseBtn">
+                    Ajouter la dépense
+                </button>
                 
                 <div class="expenses-list">
-                    <h3>Dernières dépenses</h3>
+                    <h3>📋 Dernières dépenses</h3>
                     <div id="expensesList"></div>
                 </div>
             </div>
 
-            <!-- Bilan -->
+            <!-- Section Bilan -->
             <div id="balance" class="section">
                 <h2>Bilan et Répartition</h2>
                 <div id="balanceSummary"></div>
-                <h3>💸 Virements à effectuer</h3>
-                <div id="transfersList"></div>
+                <div class="transfers-section" id="transfersSection" style="display: none;">
+                    <h3>💸 Virements à effectuer (optimisés)</h3>
+                    <div id="transfersList"></div>
+                </div>
             </div>
         </div>
+    </div>
+
+    <!-- Bouton Admin discret -->
+    <button class="admin-button" onclick="window.toggleAdmin()">⚙️</button>
+    
+    <!-- Panel Admin -->
+    <div class="admin-panel" id="adminPanel">
+        <h3>Administration</h3>
+        <div class="form-group">
+            <label>Code admin</label>
+            <input type="password" id="adminCode" placeholder="Entrer le code 333">
+        </div>
+        <button class="btn btn-small" onclick="window.checkAdmin()">Valider</button>
+        <button class="btn btn-small btn-danger" onclick="window.logoutAdmin()" style="display: none;" id="logoutBtn">Déconnexion</button>
+        
+        <div id="adminActions" style="display: none; margin-top: 15px;">
+            <p style="color: #059669; margin-bottom: 10px;">✅ Mode admin activé</p>
+            <button class="btn btn-small btn-success" onclick="window.exportData()">📥 Exporter</button>
+            <button class="btn btn-small btn-danger" onclick="window.resetYear()">🆕 Nouvelle année</button>
+            <button class="btn btn-small btn-danger" onclick="window.clearAll()">🗑️ Tout effacer</button>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    <div id="message" class="message"></div>
+
+    <!-- Loading -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Un instant... 🙏</div>
     </div>
 
     <script>
         // Configuration
         const SHEET_ID = '1jKYQJXIdB-b5MjvSkiM5QVMqNNEJUjSGe-1sCZvEkEo';
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwUrAaGSxspiC4OL_QFitb9-74eM1W9ywAzZMYNfP0sMAUDb2GHd6-2agmcobaybPABKg/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwCBDGHPOefn_0LOPC5LF18JsUtaD9rO_5Cr8myQwXOrxvfzFPUNoeunEDmiujAXR6ytA/exec';
         
-        // État global
-        let appData = {
+        // État global de l'application
+        window.appState = {
             families: [],
             expenses: [],
-            syncInProgress: false
+            isAdmin: false,
+            isSyncing: false,
+            lastSync: null,
+            currentYear: new Date().getFullYear()
         };
 
-        // Initialisation
+        // Flags pour éviter les doublons
+        let isAddingFamily = false;
+        let isAddingExpense = false;
+
+        // ============= INITIALISATION =============
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('Initialisation de l\'application...');
             initApp();
         });
 
-        function initApp() {
-            // Event listeners
+        async function initApp() {
+            // Event listeners pour les tabs
+            setupEventListeners();
+            
+            // Charger depuis le cache local pour affichage immédiat
+            loadFromCache();
+            updateUI();
+            
+            // Puis synchroniser avec Google Sheets
+            await syncFromSheet();
+        }
+
+        function setupEventListeners() {
+            // Tabs
             document.querySelectorAll('.tab').forEach(tab => {
                 tab.addEventListener('click', function() {
                     switchTab(this.dataset.tab);
                 });
             });
 
+            // Bouton ajouter famille
             document.getElementById('addFamilyBtn').addEventListener('click', addFamily);
+            
+            // Bouton ajouter dépense
             document.getElementById('addExpenseBtn').addEventListener('click', addExpense);
 
-            // Charger les données au démarrage
-            syncFromSheet();
+            // Enter pour valider les formulaires
+            document.getElementById('familyName').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') addFamily();
+            });
+            
+            document.getElementById('familyMembers').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') addFamily();
+            });
         }
 
-        // Synchronisation depuis Google Sheets (lecture CSV directe)
+        // ============= CACHE LOCAL =============
+        function loadFromCache() {
+            try {
+                const cached = localStorage.getItem('lourdes_data');
+                if (cached) {
+                    const data = JSON.parse(cached);
+                    window.appState.families = data.families || [];
+                    window.appState.expenses = data.expenses || [];
+                    console.log('Données chargées du cache:', window.appState);
+                }
+            } catch(e) {
+                console.error('Erreur de cache:', e);
+            }
+        }
+
+        function saveToCache() {
+            try {
+                localStorage.setItem('lourdes_data', JSON.stringify({
+                    families: window.appState.families,
+                    expenses: window.appState.expenses,
+                    lastSync: new Date().toISOString()
+                }));
+            } catch(e) {
+                console.error('Erreur sauvegarde cache:', e);
+            }
+        }
+
+        // ============= SYNCHRONISATION =============
         async function syncFromSheet() {
-            if (appData.syncInProgress) return;
+            if (window.appState.isSyncing) return;
             
-            appData.syncInProgress = true;
+            window.appState.isSyncing = true;
             updateSyncStatus('syncing');
             
             try {
-                // Lire le CSV directement (un seul onglet "Data")
-                const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
-                const response = await fetch(csvUrl);
+                // Lire via Google Apps Script pour avoir toutes les données
+                const response = await fetch(SCRIPT_URL + '?action=read');
+                const result = await response.json();
                 
-                if (response.ok) {
-                    const csvText = await response.text();
-                    parseCSVData(csvText);
+                if (result.status === 'success' && result.data) {
+                    // Traiter les familles
+                    if (result.data.families && Array.isArray(result.data.families)) {
+                        window.appState.families = result.data.families
+                            .filter(f => f.ID && f.Nom) // Filtrer les lignes vides
+                            .map(f => ({
+                                id: f.ID,
+                                name: f.Nom,
+                                members: parseInt(f.Membres) || 1,
+                                date: f.Date_Ajout
+                            }));
+                    }
+                    
+                    // Traiter les dépenses
+                    if (result.data.expenses && Array.isArray(result.data.expenses)) {
+                        window.appState.expenses = result.data.expenses
+                            .filter(e => e.ID && e.Montant) // Filtrer les lignes vides
+                            .map(e => ({
+                                id: e.ID,
+                                familyId: e.Famille_ID,
+                                amount: parseFloat(e.Montant) || 0,
+                                description: e.Description || '',
+                                date: e.Date || new Date().toLocaleDateString('fr-FR'),
+                                year: parseInt(e.Année) || window.appState.currentYear
+                            }));
+                    }
+                    
+                    console.log('Données synchronisées:', window.appState);
+                    
+                    // Sauvegarder en cache
+                    saveToCache();
+                    
+                    // Mettre à jour l'interface
                     updateUI();
-                }
-                
-                updateSyncStatus('synced');
-            } catch (error) {
-                console.error('Erreur sync:', error);
-                updateSyncStatus('error');
-            } finally {
-                appData.syncInProgress = false;
-            }
-        }
-
-        // Parser le CSV et extraire familles et dépenses
-        function parseCSVData(csv) {
-            const lines = csv.split('\n');
-            const families = [];
-            const expenses = [];
-            
-            // Ignorer l'en-tête (ligne 0)
-            for (let i = 1; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (!line) continue;
-                
-                const values = parseCSVLine(line);
-                
-                // Ignorer les lignes supprimées
-                if (values[7] && values[7].trim() !== '') continue;
-                
-                const type = values[0];
-                
-                if (type === 'FAM') {
-                    families.push({
-                        id: values[1],
-                        name: values[2],
-                        members: parseInt(values[3]) || 1
-                    });
-                } else if (type === 'DEP') {
-                    expenses.push({
-                        id: values[1],
-                        familyName: values[2],
-                        amount: parseFloat(values[4]) || 0,
-                        description: values[5],
-                        date: values[6]
-                    });
-                }
-            }
-            
-            appData.families = families;
-            appData.expenses = expenses;
-        }
-
-        // Parser une ligne CSV
-        function parseCSVLine(line) {
-            const values = [];
-            let current = '';
-            let inQuotes = false;
-            
-            for (let i = 0; i < line.length; i++) {
-                const char = line[i];
-                
-                if (char === '"') {
-                    inQuotes = !inQuotes;
-                } else if (char === ',' && !inQuotes) {
-                    values.push(current.trim());
-                    current = '';
+                    
+                    window.appState.lastSync = new Date();
+                    updateSyncStatus('synced');
+                    
                 } else {
-                    current += char;
+                    throw new Error('Données invalides reçues');
                 }
+                
+            } catch (error) {
+                console.error('Erreur de synchronisation:', error);
+                updateSyncStatus('error');
+                // Utiliser le cache en cas d'erreur
+                showMessage('Erreur de connexion. Mode hors ligne activé.', 'error');
+            } finally {
+                window.appState.isSyncing = false;
             }
-            values.push(current.trim());
-            
-            return values;
         }
 
-        // Changer d'onglet
+        // Forcer la synchronisation
+        window.forceSync = async function() {
+            showLoading('Synchronisation en cours... 🙏');
+            await syncFromSheet();
+            hideLoading();
+            showMessage('Synchronisation terminée !', 'success');
+        };
+
+        // ============= CHANGEMENT D'ONGLET =============
         function switchTab(tabName) {
-            // Sync à chaque changement d'onglet
+            // Synchroniser à chaque changement d'onglet
             syncFromSheet();
             
-            // Changer l'onglet actif
+            // Mettre à jour les tabs
             document.querySelectorAll('.tab').forEach(tab => {
                 tab.classList.remove('active');
                 if (tab.dataset.tab === tabName) {
@@ -495,164 +838,289 @@
                 }
             });
             
-            // Changer la section
+            // Mettre à jour les sections
             document.querySelectorAll('.section').forEach(section => {
                 section.classList.remove('active');
             });
             document.getElementById(tabName).classList.add('active');
-            
-            updateUI();
         }
 
-        // Ajouter une famille
+        // ============= GESTION DES FAMILLES =============
         async function addFamily() {
-            const name = document.getElementById('familyName').value.trim();
-            const members = parseInt(document.getElementById('familyMembers').value);
-            
-            if (!name || !members) {
-                showMessage('Remplissez tous les champs', 'error');
+            if (isAddingFamily) {
+                console.log('Ajout déjà en cours...');
                 return;
             }
             
-            // Envoyer au Google Sheet
-            await sendToSheet({
-                type: 'FAM',
-                id: Date.now(),
-                name: name,
-                members: members
-            });
+            const nameInput = document.getElementById('familyName');
+            const membersInput = document.getElementById('familyMembers');
+            const name = nameInput.value.trim();
+            const members = parseInt(membersInput.value);
             
-            // Vider les champs
-            document.getElementById('familyName').value = '';
-            document.getElementById('familyMembers').value = '';
-            
-            showMessage('Famille ajoutée !', 'success');
-            
-            // Resync après 500ms
-            setTimeout(() => syncFromSheet(), 500);
-        }
-
-        // Ajouter une dépense
-        async function addExpense() {
-            const familyName = document.getElementById('expensePayer').options[document.getElementById('expensePayer').selectedIndex]?.text;
-            const amount = parseFloat(document.getElementById('expenseAmount').value);
-            const description = document.getElementById('expenseDescription').value.trim();
-            
-            if (!familyName || !amount || !description || familyName === 'Sélectionner une famille') {
-                showMessage('Remplissez tous les champs', 'error');
+            // Validation
+            if (!name || !members || members < 1) {
+                showMessage('Veuillez remplir tous les champs correctement', 'error');
                 return;
             }
             
-            // Envoyer au Google Sheet
-            await sendToSheet({
-                type: 'DEP',
-                id: Date.now(),
-                familyName: familyName,
-                amount: amount,
-                description: description,
-                date: new Date().toLocaleDateString('fr-FR')
-            });
+            // Vérifier les doublons
+            if (window.appState.families.some(f => f.name.toLowerCase() === name.toLowerCase())) {
+                showMessage('Cette famille existe déjà !', 'error');
+                return;
+            }
             
-            // Vider les champs
-            document.getElementById('expensePayer').value = '';
-            document.getElementById('expenseAmount').value = '';
-            document.getElementById('expenseDescription').value = '';
+            isAddingFamily = true;
+            const btn = document.getElementById('addFamilyBtn');
+            btn.disabled = true;
+            btn.textContent = 'Ajout en cours...';
             
-            showMessage('Dépense ajoutée !', 'success');
+            showLoading('Ajout de la famille...');
             
-            // Resync après 500ms
-            setTimeout(() => syncFromSheet(), 500);
-        }
-
-        // Envoyer au Google Sheet via Apps Script
-        async function sendToSheet(data) {
             try {
-                await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: {
-                        'Content-Type': 'text/plain',
-                    },
-                    body: JSON.stringify(data)
-                });
-            } catch (error) {
-                console.error('Erreur envoi:', error);
+                const newFamily = {
+                    id: Date.now().toString(),
+                    name: name,
+                    members: members,
+                    date: new Date().toLocaleDateString('fr-FR')
+                };
+                
+                // Ajouter localement pour feedback immédiat
+                window.appState.families.push(newFamily);
+                saveToCache();
+                updateUI();
+                
+                // Vider les champs
+                nameInput.value = '';
+                membersInput.value = '';
+                
+                // Envoyer à Google Sheets
+                await saveToSheets('family', newFamily);
+                
+                hideLoading();
+                showMessage(`Famille "${name}" ajoutée avec succès !`, 'success');
+                
+                // Resynchroniser après 1 seconde
+                setTimeout(() => syncFromSheet(), 1000);
+                
+            } catch(error) {
+                console.error('Erreur ajout famille:', error);
+                hideLoading();
+                showMessage('Erreur lors de l\'ajout', 'error');
+            } finally {
+                isAddingFamily = false;
+                btn.disabled = false;
+                btn.textContent = 'Ajouter la famille';
             }
         }
 
-        // Modifier une famille
-        window.editFamily = async function(id, currentMembers) {
-            const newMembers = prompt('Nombre de membres :', currentMembers);
-            if (newMembers === null) return;
-            
-            const members = parseInt(newMembers);
-            if (isNaN(members) || members < 1) {
-                showMessage('Nombre invalide', 'error');
+        window.deleteFamily = async function(familyId) {
+            if (!window.appState.isAdmin) {
+                showMessage('Accès administrateur requis', 'error');
                 return;
             }
             
-            await sendToSheet({
-                action: 'update',
-                type: 'FAM',
-                id: id,
-                members: members
-            });
+            const family = window.appState.families.find(f => f.id === familyId);
+            if (!family) return;
             
-            showMessage('Famille modifiée !', 'success');
-            setTimeout(() => syncFromSheet(), 500);
-        }
+            if (!confirm(`Supprimer la famille "${family.name}" ?`)) return;
+            
+            showLoading('Suppression en cours...');
+            
+            try {
+                // Supprimer localement
+                window.appState.families = window.appState.families.filter(f => f.id !== familyId);
+                window.appState.expenses = window.appState.expenses.filter(e => e.familyId !== familyId);
+                saveToCache();
+                updateUI();
+                
+                // Envoyer la suppression à Google Sheets
+                await saveToSheets('delete_family', { id: familyId });
+                
+                hideLoading();
+                showMessage('Famille supprimée', 'success');
+                
+                // Resync
+                setTimeout(() => syncFromSheet(), 1000);
+            } catch(error) {
+                hideLoading();
+                showMessage('Erreur lors de la suppression', 'error');
+            }
+        };
 
-        // Supprimer une famille
-        window.deleteFamily = async function(id) {
-            if (!confirm('Supprimer cette famille ?')) return;
-            
-            await sendToSheet({
-                action: 'delete',
-                type: 'FAM',
-                id: id
-            });
-            
-            showMessage('Famille supprimée !', 'success');
-            setTimeout(() => syncFromSheet(), 500);
-        }
-
-        // Modifier une dépense
-        window.editExpense = async function(id, currentAmount) {
-            const newAmount = prompt('Nouveau montant (€) :', currentAmount);
-            if (newAmount === null) return;
-            
-            const amount = parseFloat(newAmount);
-            if (isNaN(amount) || amount <= 0) {
-                showMessage('Montant invalide', 'error');
+        window.editFamilyMembers = async function(familyId) {
+            if (!window.appState.isAdmin) {
+                showMessage('Accès administrateur requis', 'error');
                 return;
             }
             
-            await sendToSheet({
-                action: 'update',
-                type: 'DEP',
-                id: id,
-                amount: amount
-            });
+            const family = window.appState.families.find(f => f.id === familyId);
+            if (!family) return;
             
-            showMessage('Dépense modifiée !', 'success');
-            setTimeout(() => syncFromSheet(), 500);
+            const newMembers = prompt(`Nombre de membres pour ${family.name} :`, family.members);
+            if (!newMembers || isNaN(newMembers)) return;
+            
+            family.members = parseInt(newMembers);
+            saveToCache();
+            updateUI();
+            
+            await saveToSheets('update_family', family);
+            showMessage('Nombre de membres modifié', 'success');
+        };
+
+        // ============= GESTION DES DÉPENSES =============
+        async function addExpense() {
+            if (isAddingExpense) return;
+            
+            const payerSelect = document.getElementById('expensePayer');
+            const amountInput = document.getElementById('expenseAmount');
+            const descInput = document.getElementById('expenseDescription');
+            
+            const familyId = payerSelect.value;
+            const amount = parseFloat(amountInput.value);
+            const description = descInput.value.trim();
+            
+            if (!familyId || !amount || amount <= 0 || !description) {
+                showMessage('Veuillez remplir tous les champs correctement', 'error');
+                return;
+            }
+            
+            isAddingExpense = true;
+            const btn = document.getElementById('addExpenseBtn');
+            btn.disabled = true;
+            btn.textContent = 'Ajout en cours...';
+            
+            showLoading('Enregistrement de la dépense...');
+            
+            try {
+                const newExpense = {
+                    id: Date.now().toString(),
+                    familyId: familyId,
+                    amount: amount,
+                    description: description,
+                    date: new Date().toLocaleDateString('fr-FR'),
+                    year: window.appState.currentYear
+                };
+                
+                // Ajouter localement
+                window.appState.expenses.push(newExpense);
+                saveToCache();
+                updateUI();
+                
+                // Vider les champs
+                payerSelect.value = '';
+                amountInput.value = '';
+                descInput.value = '';
+                
+                // Sauvegarder
+                await saveToSheets('expense', newExpense);
+                
+                hideLoading();
+                showMessage('Dépense ajoutée avec succès !', 'success');
+                
+                // Resync
+                setTimeout(() => syncFromSheet(), 1000);
+                
+            } catch(error) {
+                hideLoading();
+                showMessage('Erreur lors de l\'ajout', 'error');
+            } finally {
+                isAddingExpense = false;
+                btn.disabled = false;
+                btn.textContent = 'Ajouter la dépense';
+            }
         }
 
-        // Supprimer une dépense
-        window.deleteExpense = async function(id) {
+        window.deleteExpense = async function(expenseId) {
+            if (!window.appState.isAdmin) {
+                showMessage('Accès administrateur requis', 'error');
+                return;
+            }
+            
             if (!confirm('Supprimer cette dépense ?')) return;
             
-            await sendToSheet({
-                action: 'delete',
-                type: 'DEP',
-                id: id
+            showLoading('Suppression...');
+            
+            // Supprimer localement
+            window.appState.expenses = window.appState.expenses.filter(e => e.id !== expenseId);
+            saveToCache();
+            updateUI();
+            
+            // Sauvegarder
+            await saveToSheets('delete_expense', { id: expenseId });
+            
+            hideLoading();
+            showMessage('Dépense supprimée', 'success');
+            
+            setTimeout(() => syncFromSheet(), 1000);
+        };
+
+        // ============= CALCUL DU BILAN =============
+        function calculateBalance() {
+            const totalPeople = window.appState.families.reduce((sum, f) => sum + f.members, 0);
+            const totalExpenses = window.appState.expenses
+                .filter(e => e.year === window.appState.currentYear)
+                .reduce((sum, e) => sum + e.amount, 0);
+            
+            if (totalPeople === 0) return { perPerson: 0, familyBalances: [] };
+            
+            const costPerPerson = totalExpenses / totalPeople;
+            
+            const familyBalances = window.appState.families.map(family => {
+                const familyPaid = window.appState.expenses
+                    .filter(e => e.familyId === family.id && e.year === window.appState.currentYear)
+                    .reduce((sum, e) => sum + e.amount, 0);
+                
+                const familyOwes = costPerPerson * family.members;
+                const balance = familyPaid - familyOwes;
+                
+                return {
+                    family: family,
+                    paid: familyPaid,
+                    owes: familyOwes,
+                    balance: balance
+                };
             });
             
-            showMessage('Dépense supprimée !', 'success');
-            setTimeout(() => syncFromSheet(), 500);
+            return { 
+                perPerson: costPerPerson, 
+                totalExpenses: totalExpenses,
+                totalPeople: totalPeople,
+                familyBalances: familyBalances 
+            };
         }
 
-        // Mettre à jour l'interface
+        function optimizeTransfers(balances) {
+            const creditors = balances.filter(b => b.balance > 0.01)
+                .sort((a, b) => b.balance - a.balance);
+            const debtors = balances.filter(b => b.balance < -0.01)
+                .sort((a, b) => a.balance - b.balance);
+            
+            const transfers = [];
+            
+            for (let creditor of creditors) {
+                let remainingCredit = creditor.balance;
+                
+                for (let debtor of debtors) {
+                    if (remainingCredit <= 0.01) break;
+                    if (debtor.balance >= -0.01) continue;
+                    
+                    const amount = Math.min(remainingCredit, -debtor.balance);
+                    
+                    transfers.push({
+                        from: debtor.family,
+                        to: creditor.family,
+                        amount: Math.round(amount * 100) / 100
+                    });
+                    
+                    remainingCredit -= amount;
+                    debtor.balance += amount;
+                }
+            }
+            
+            return transfers;
+        }
+
+        // ============= MISE À JOUR DE L'INTERFACE =============
         function updateUI() {
             updateFamiliesList();
             updateExpensesList();
@@ -660,189 +1128,315 @@
             updatePayerSelect();
         }
 
-        // Afficher les familles
         function updateFamiliesList() {
             const container = document.getElementById('familiesList');
             
-            if (appData.families.length === 0) {
-                container.innerHTML = '<p style="text-align: center; margin-top: 20px; color: #6b7280;">Aucune famille</p>';
+            if (window.appState.families.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">👨‍👩‍👧‍👦</div>
+                        <p>Aucune famille enregistrée</p>
+                        <p style="font-size: 0.9em; margin-top: 10px;">Ajoutez une famille pour commencer</p>
+                    </div>
+                `;
                 return;
             }
             
-            container.innerHTML = appData.families.map(family => `
-                <div class="family-card">
-                    <div class="family-actions">
-                        <button class="btn btn-small btn-edit" onclick="editFamily('${family.id}', ${family.members})">✏️</button>
-                        <button class="btn btn-small btn-danger" onclick="deleteFamily('${family.id}')">×</button>
-                    </div>
+            container.innerHTML = window.appState.families.map(family => `
+                <div class="family-card" data-admin="${window.appState.isAdmin}">
+                    ${window.appState.isAdmin ? `
+                        <button class="delete-btn" onclick="window.deleteFamily('${family.id}')">×</button>
+                    ` : ''}
                     <div class="family-name">${family.name}</div>
-                    <div>👥 ${family.members} membre${family.members > 1 ? 's' : ''}</div>
+                    <div class="family-members">
+                        👥 ${family.members} membre${family.members > 1 ? 's' : ''}
+                    </div>
+                    ${window.appState.isAdmin ? `
+                        <div class="family-actions admin-only">
+                            <button class="btn btn-small" onclick="window.editFamilyMembers('${family.id}')">
+                                ✏️ Modifier
+                            </button>
+                        </div>
+                    ` : ''}
                 </div>
             `).join('');
         }
 
-        // Afficher les dépenses
         function updateExpensesList() {
             const container = document.getElementById('expensesList');
+            const recentExpenses = window.appState.expenses
+                .filter(e => e.year === window.appState.currentYear)
+                .sort((a, b) => {
+                    const dateA = a.date.split('/').reverse().join('');
+                    const dateB = b.date.split('/').reverse().join('');
+                    return dateB.localeCompare(dateA);
+                })
+                .slice(0, 10);
             
-            if (appData.expenses.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: #6b7280;">Aucune dépense</p>';
+            if (recentExpenses.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💰</div>
+                        <p>Aucune dépense enregistrée</p>
+                    </div>
+                `;
                 return;
             }
             
-            const sortedExpenses = [...appData.expenses].reverse().slice(0, 10);
-            
-            container.innerHTML = sortedExpenses.map(expense => `
-                <div class="expense-item">
-                    <div>
-                        <strong>${expense.familyName}</strong><br>
-                        <span style="color: #6b7280;">${expense.description}</span><br>
-                        <small style="color: #9ca3af;">${expense.date || ''}</small>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <strong style="color: #059669; font-size: 1.2em;">${expense.amount.toFixed(2)} €</strong>
-                        <div class="expense-actions">
-                            <button class="btn btn-small btn-edit" onclick="editExpense('${expense.id}', ${expense.amount})">✏️</button>
-                            <button class="btn btn-small btn-danger" onclick="deleteExpense('${expense.id}')">×</button>
+            container.innerHTML = recentExpenses.map(expense => {
+                const family = window.appState.families.find(f => f.id === expense.familyId);
+                return `
+                    <div class="expense-item">
+                        <div class="expense-info">
+                            <strong>${family ? family.name : 'Famille inconnue'}</strong><br>
+                            <span style="color: #6b7280;">${expense.description}</span><br>
+                            <small style="color: #9ca3af;">${expense.date}</small>
+                        </div>
+                        <div style="display: flex; align-items: center;">
+                            <div class="expense-amount">${expense.amount.toFixed(2)} €</div>
+                            ${window.appState.isAdmin ? `
+                                <button class="btn btn-small btn-danger" onclick="window.deleteExpense('${expense.id}')" style="margin-left: 10px;">
+                                    🗑️
+                                </button>
+                            ` : ''}
                         </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
-        // Calculer et afficher le bilan
         function updateBalance() {
-            const summaryContainer = document.getElementById('balanceSummary');
-            const transfersContainer = document.getElementById('transfersList');
+            const container = document.getElementById('balanceSummary');
+            const transfersSection = document.getElementById('transfersSection');
+            const transfersList = document.getElementById('transfersList');
             
-            // Calculer les totaux
-            const totalPeople = appData.families.reduce((sum, f) => sum + f.members, 0);
-            const totalExpenses = appData.expenses.reduce((sum, e) => sum + e.amount, 0);
+            const { perPerson, totalExpenses, totalPeople, familyBalances } = calculateBalance();
             
-            if (totalPeople === 0 || appData.families.length === 0) {
-                summaryContainer.innerHTML = '<p>Ajoutez des familles pour voir le bilan</p>';
-                transfersContainer.innerHTML = '';
+            if (familyBalances.length === 0 || totalExpenses === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📊</div>
+                        <p>Ajoutez des familles et des dépenses pour voir le bilan</p>
+                    </div>
+                `;
+                transfersSection.style.display = 'none';
                 return;
             }
             
-            const costPerPerson = totalExpenses / totalPeople;
-            
-            // Calculer le bilan par famille
-            const familyBalances = appData.families.map(family => {
-                const paid = appData.expenses
-                    .filter(e => e.familyName === family.name)
-                    .reduce((sum, e) => sum + e.amount, 0);
-                
-                const owes = costPerPerson * family.members;
-                const balance = paid - owes;
-                
-                return {
-                    name: family.name,
-                    members: family.members,
-                    paid: paid,
-                    owes: owes,
-                    balance: balance
-                };
-            });
-            
-            // Afficher le résumé
-            summaryContainer.innerHTML = `
-                <div style="padding: 20px; background: #f9fafb; border-radius: 15px; margin-bottom: 20px;">
-                    <h3>📊 Résumé</h3>
-                    <p>Total dépenses : <strong>${totalExpenses.toFixed(2)} €</strong></p>
-                    <p>Nombre de personnes : <strong>${totalPeople}</strong></p>
-                    <p>Coût par personne : <strong>${costPerPerson.toFixed(2)} €</strong></p>
+            container.innerHTML = `
+                <div class="balance-summary">
+                    <h3>📊 Résumé global</h3>
+                    <p>Total des dépenses : <strong>${totalExpenses.toFixed(2)} €</strong></p>
+                    <p>Nombre total de personnes : <strong>${totalPeople}</strong></p>
+                    <p>Coût par personne : <strong>${perPerson.toFixed(2)} €</strong></p>
                 </div>
                 
-                ${familyBalances.map(fb => `
-                    <div class="balance-card ${fb.balance > 0 ? 'positive' : fb.balance < 0 ? 'negative' : ''}">
-                        <strong>${fb.name}</strong> (${fb.members} pers.)<br>
-                        A payé : ${fb.paid.toFixed(2)} €<br>
-                        Doit : ${fb.owes.toFixed(2)} €<br>
-                        <strong>Solde : ${fb.balance > 0 ? '+' : ''}${fb.balance.toFixed(2)} €</strong>
-                    </div>
-                `).join('')}
+                <h3 style="margin: 20px 0;">💰 Situation par famille</h3>
+                <div class="balance-cards">
+                    ${familyBalances.map(fb => `
+                        <div class="balance-card ${fb.balance > 0.01 ? 'positive' : fb.balance < -0.01 ? 'negative' : 'neutral'}">
+                            <strong>${fb.family.name}</strong> (${fb.family.members} pers.)<br>
+                            A payé : ${fb.paid.toFixed(2)} €<br>
+                            Doit payer : ${fb.owes.toFixed(2)} €<br>
+                            <strong style="font-size: 1.2em;">
+                                Solde : ${fb.balance > 0 ? '+' : ''}${fb.balance.toFixed(2)} €
+                            </strong>
+                        </div>
+                    `).join('')}
+                </div>
             `;
             
             // Calculer les virements optimisés
-            const creditors = familyBalances.filter(f => f.balance > 0).sort((a, b) => b.balance - a.balance);
-            const debtors = familyBalances.filter(f => f.balance < 0).sort((a, b) => a.balance - b.balance);
+            const transfers = optimizeTransfers([...familyBalances]);
             
-            const transfers = [];
-            
-            for (let creditor of creditors) {
-                let remaining = creditor.balance;
-                
-                for (let debtor of debtors) {
-                    if (remaining <= 0.01) break;
-                    if (debtor.balance >= -0.01) continue;
-                    
-                    const amount = Math.min(remaining, -debtor.balance);
-                    
-                    transfers.push({
-                        from: debtor.name,
-                        to: creditor.name,
-                        amount: amount
-                    });
-                    
-                    remaining -= amount;
-                    debtor.balance += amount;
-                }
-            }
-            
-            // Afficher les virements
             if (transfers.length === 0) {
-                transfersContainer.innerHTML = '<p style="text-align: center; color: #059669;">✅ Tous les comptes sont équilibrés !</p>';
+                transfersSection.style.display = 'none';
             } else {
-                transfersContainer.innerHTML = transfers.map(t => `
+                transfersSection.style.display = 'block';
+                transfersList.innerHTML = transfers.map(t => `
                     <div class="transfer-item">
-                        <strong>${t.from}</strong>
-                        <span style="font-size: 2em; color: #0066cc;">→</span>
-                        <strong>${t.to}</strong>
-                        <strong style="color: #dc2626; font-size: 1.2em;">${t.amount.toFixed(2)} €</strong>
+                        <div style="flex: 1;">
+                            <strong>${t.from.name}</strong>
+                        </div>
+                        <div style="font-size: 1.5em; color: #0066cc;">→</div>
+                        <div style="flex: 1;">
+                            <strong>${t.to.name}</strong>
+                        </div>
+                        <div style="font-size: 1.3em; font-weight: bold; color: #dc2626;">
+                            ${t.amount.toFixed(2)} €
+                        </div>
                     </div>
                 `).join('');
             }
         }
 
-        // Mettre à jour le sélecteur de famille
         function updatePayerSelect() {
             const select = document.getElementById('expensePayer');
+            const currentValue = select.value;
+            
             select.innerHTML = '<option value="">Sélectionner une famille</option>' +
-                appData.families.map(family => 
+                window.appState.families.map(family => 
                     `<option value="${family.id}">${family.name}</option>`
                 ).join('');
+            
+            if (currentValue) select.value = currentValue;
         }
 
-        // Statut de synchronisation
         function updateSyncStatus(status) {
             const dot = document.getElementById('syncDot');
-            const text = document.getElementById('syncStatus');
+            const text = document.getElementById('syncText');
             
-            if (status === 'syncing') {
-                dot.classList.add('syncing');
-                text.textContent = 'Synchronisation...';
-            } else if (status === 'synced') {
-                dot.classList.remove('syncing');
-                text.textContent = 'Synchronisé';
-            } else {
-                dot.classList.remove('syncing');
-                text.textContent = 'Erreur';
+            dot.className = 'sync-dot ' + status;
+            
+            switch(status) {
+                case 'synced':
+                    text.textContent = 'Synchronisé';
+                    break;
+                case 'syncing':
+                    text.textContent = 'Synchronisation...';
+                    break;
+                case 'error':
+                    text.textContent = 'Erreur de sync';
+                    break;
             }
         }
 
-        // Afficher un message
-        function showMessage(text, type) {
-            const existing = document.querySelector('.message');
-            if (existing) existing.remove();
+        // ============= ADMINISTRATION =============
+        window.toggleAdmin = function() {
+            const panel = document.getElementById('adminPanel');
+            panel.classList.toggle('active');
+        };
+
+        window.checkAdmin = function() {
+            const code = document.getElementById('adminCode').value;
             
-            const div = document.createElement('div');
-            div.className = `message ${type}`;
-            div.textContent = text;
-            document.body.appendChild(div);
+            if (code === '333') {
+                window.appState.isAdmin = true;
+                document.getElementById('adminActions').style.display = 'block';
+                document.getElementById('logoutBtn').style.display = 'inline-block';
+                document.getElementById('adminCode').value = '';
+                showMessage('Mode administrateur activé', 'success');
+                updateUI();
+            } else {
+                showMessage('Code incorrect', 'error');
+            }
+        };
+
+        window.logoutAdmin = function() {
+            window.appState.isAdmin = false;
+            document.getElementById('adminActions').style.display = 'none';
+            document.getElementById('logoutBtn').style.display = 'none';
+            document.getElementById('adminPanel').classList.remove('active');
+            showMessage('Mode administrateur désactivé', 'success');
+            updateUI();
+        };
+
+        window.exportData = function() {
+            const data = {
+                date: new Date().toISOString(),
+                year: window.appState.currentYear,
+                families: window.appState.families,
+                expenses: window.appState.expenses
+            };
             
-            setTimeout(() => div.remove(), 3000);
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `lourdes-${window.appState.currentYear}-export.json`;
+            a.click();
+            
+            showMessage('Données exportées', 'success');
+        };
+
+        window.resetYear = function() {
+            if (!confirm('Commencer une nouvelle année ? Les dépenses seront effacées mais les familles seront conservées.')) {
+                return;
+            }
+            
+            showLoading('Initialisation nouvelle année...');
+            
+            window.appState.currentYear = new Date().getFullYear();
+            window.appState.expenses = [];
+            saveToCache();
+            updateUI();
+            
+            saveToSheets('reset_year', { year: window.appState.currentYear });
+            
+            hideLoading();
+            showMessage('Nouvelle année initialisée', 'success');
+        };
+
+        window.clearAll = function() {
+            if (!confirm('⚠️ ATTENTION ! Tout effacer définitivement ?')) return;
+            if (!confirm('⚠️ DERNIÈRE CONFIRMATION ! Cette action est irréversible !')) return;
+            
+            showLoading('Suppression totale...');
+            
+            window.appState.families = [];
+            window.appState.expenses = [];
+            saveToCache();
+            updateUI();
+            
+            saveToSheets('clear_all', {});
+            
+            hideLoading();
+            showMessage('Toutes les données ont été effacées', 'success');
+        };
+
+        // ============= SAUVEGARDE GOOGLE SHEETS =============
+        async function saveToSheets(action, data) {
+            try {
+                const url = SCRIPT_URL + '?action=write&type=' + action + '&data=' + encodeURIComponent(JSON.stringify(data));
+                
+                // Mode no-cors pour la rapidité (comme l'app de suivi)
+                await fetch(url, { mode: 'no-cors' });
+                
+                return true;
+            } catch (error) {
+                console.error('Erreur sauvegarde:', error);
+                return false;
+            }
         }
+
+        // ============= UTILITAIRES UI =============
+        function showMessage(text, type) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = 'message show ' + type;
+            
+            setTimeout(() => {
+                msg.classList.remove('show');
+            }, 3000);
+        }
+
+        function showLoading(text = 'Chargement...') {
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.querySelector('.loading-text').textContent = text;
+            overlay.classList.add('active');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.remove('active');
+        }
+
+        // ============= AUTO-SYNC =============
+        // Sync au focus de la page (comme l'app de suivi)
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && !window.appState.isSyncing) {
+                syncFromSheet();
+            }
+        });
+
+        // Sync quand on revient sur la fenêtre
+        window.addEventListener('focus', () => {
+            if (!window.appState.isSyncing) {
+                syncFromSheet();
+            }
+        });
+
+        // Pas de sync automatique toutes les 30s (comme demandé)
+        // On sync seulement sur les actions utilisateur
     </script>
 </body>
 </html>
