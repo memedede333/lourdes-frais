@@ -83,7 +83,7 @@
         }
 
         .sync-indicator.synced { background: #4ade80; }
-        .sync-indicator.syncing { background: #fb923c; }
+        .sync-indicator.syncing { background: #fb923c; animation: pulse 0.5s infinite; }
         .sync-indicator.error { background: #f87171; }
 
         @keyframes pulse {
@@ -140,7 +140,7 @@
 
         .content {
             padding: 30px;
-            padding-bottom: 80px; /* Espace pour mobile */
+            padding-bottom: 80px;
         }
 
         .section {
@@ -208,6 +208,10 @@
             margin-left: 10px;
         }
 
+        .btn-danger {
+            background: #dc2626;
+        }
+
         .families-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -240,10 +244,15 @@
             font-size: 1.1em;
         }
 
-        .family-delete {
+        .family-actions {
             position: absolute;
             top: 10px;
             right: 10px;
+            display: flex;
+            gap: 5px;
+        }
+
+        .family-edit, .family-delete {
             background: #ef4444;
             color: white;
             border: none;
@@ -255,7 +264,11 @@
             transition: transform 0.2s;
         }
 
-        .family-delete:hover {
+        .family-edit {
+            background: #3b82f6;
+        }
+
+        .family-delete:hover, .family-edit:hover {
             transform: scale(1.1);
         }
 
@@ -286,6 +299,16 @@
             font-size: 1.3em;
             font-weight: bold;
             color: #059669;
+        }
+
+        .expense-delete {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
         }
 
         .balance-container {
@@ -340,29 +363,7 @@
         }
 
         .hidden {
-            display: none;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #6b7280;
-        }
-
-        .error-message {
-            background: #fee2e2;
-            color: #dc2626;
-            padding: 15px;
-            border-radius: 10px;
-            margin-top: 20px;
-        }
-
-        .success-message {
-            background: #d1fae5;
-            color: #059669;
-            padding: 15px;
-            border-radius: 10px;
-            margin-top: 20px;
+            display: none !important;
         }
 
         .loading-overlay {
@@ -412,22 +413,75 @@
             margin-top: 10px;
         }
 
-        .btn:disabled, .tab:disabled, .sync-button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+        .success-message, .error-message {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 25px;
+            border-radius: 10px;
+            z-index: 10000;
+            animation: slideUp 0.3s ease-out;
+            max-width: 90%;
+        }
+
+        .success-message {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .error-message {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        @keyframes slideUp {
+            from { bottom: -100px; opacity: 0; }
+            to { bottom: 20px; opacity: 1; }
+        }
+
+        @keyframes slideDown {
+            from { bottom: 20px; opacity: 1; }
+            to { bottom: -100px; opacity: 0; }
         }
 
         @media (max-width: 768px) {
+            .container {
+                border-radius: 0;
+                min-height: 100vh;
+            }
+            
+            body {
+                padding: 0;
+            }
+            
             .header h1 {
-                font-size: 1.8em;
+                font-size: 1.5em;
             }
             
             .tabs {
-                flex-direction: column;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: white;
+                box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+                z-index: 100;
+                padding: 5px;
             }
             
-            .families-grid {
-                grid-template-columns: 1fr;
+            .tab {
+                font-size: 0.9em;
+                padding: 12px 5px;
+            }
+            
+            .content {
+                padding: 20px;
+                padding-bottom: 100px;
+            }
+            
+            input[type="number"] {
+                font-size: 16px;
             }
         }
     </style>
@@ -468,9 +522,7 @@
                 </div>
                 <button class="btn" onclick="addFamily()">Ajouter la famille</button>
                 
-                <div class="families-grid" id="familiesList">
-                    <!-- Les familles seront affichées ici -->
-                </div>
+                <div class="families-grid" id="familiesList"></div>
             </div>
 
             <!-- Section Dépenses -->
@@ -494,24 +546,18 @@
                 
                 <div class="expenses-list">
                     <h3>Dernières dépenses</h3>
-                    <div id="expensesList">
-                        <!-- Les dépenses seront affichées ici -->
-                    </div>
+                    <div id="expensesList"></div>
                 </div>
             </div>
 
             <!-- Section Bilan -->
             <div id="balance" class="section">
                 <h2>Bilan et Répartition</h2>
-                <div id="balanceSummary">
-                    <!-- Le résumé sera affiché ici -->
-                </div>
+                <div id="balanceSummary"></div>
                 
                 <div class="transfers-section">
                     <h3>💸 Virements à effectuer (optimisés)</h3>
-                    <div id="transfersList">
-                        <!-- Les virements seront affichés ici -->
-                    </div>
+                    <div id="transfersList"></div>
                 </div>
             </div>
 
@@ -527,14 +573,10 @@
                 
                 <div id="adminPanel" class="hidden">
                     <h3>Fonctions administrateur</h3>
-                    <p style="color: #059669; margin-bottom: 20px;">✅ Mode administrateur activé - Vous pouvez maintenant modifier/supprimer les familles</p>
+                    <p style="color: #059669; margin-bottom: 20px;">✅ Mode administrateur activé</p>
                     <button class="btn" onclick="confirmResetYear()">🆕 Nouvelle année</button>
                     <button class="btn btn-secondary" onclick="exportData()">📥 Exporter les données</button>
-                    <button class="btn btn-secondary" onclick="clearAllData()" style="background: #dc2626;">🗑️ Tout effacer</button>
-                    
-                    <div class="error-message" style="margin-top: 20px;">
-                        ⚠️ Zone sensible : Les modifications ici affectent toutes les données
-                    </div>
+                    <button class="btn btn-danger" onclick="clearAllData()">🗑️ Tout effacer</button>
                 </div>
             </div>
         </div>
@@ -548,127 +590,401 @@
     </div>
 
     <script>
-        // Configuration Google Sheets
+        // Configuration
         const SHEET_ID = '1jKYQJXIdB-b5MjvSkiM5QVMqNNEJUjSGe-1sCZvEkEo';
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwCBDGHPOefn_0LOPC5LF18JsUtaD9rO_5Cr8myQwXOrxvfzFPUNoeunEDmiujAXR6ytA/exec';
-        const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?`;
         
-        // État de l'application
+        // État de l'application (TOUJOURS en mémoire, jamais réinitialisé sauf au démarrage)
         let appState = {
             families: [],
             expenses: [],
             currentYear: new Date().getFullYear(),
             isAdmin: false,
-            isSyncing: false
+            lastSync: null,
+            syncInProgress: false
         };
 
-        // Initialisation
-        document.addEventListener('DOMContentLoaded', async function() {
-            // Charger d'abord depuis le cache pour affichage immédiat
-            await loadFamilies();
-            await loadExpenses();
+        // Initialisation au chargement
+        async function initApp() {
+            // Charger depuis le localStorage en premier (instantané)
+            loadFromCache();
             updateUI();
             
-            // Puis synchroniser en arrière-plan
-            syncData(false);
-        });
+            // Puis synchroniser avec Google Sheets en arrière-plan
+            syncFromSheets();
+            
+            // Auto-sync toutes les 30 secondes si visible
+            setInterval(() => {
+                if (document.visibilityState === 'visible' && !appState.syncInProgress) {
+                    syncFromSheets();
+                }
+            }, 30000);
+        }
 
-        // Changement d'onglet SANS rechargement systématique
+        // Charger depuis le cache local
+        function loadFromCache() {
+            const cachedFamilies = localStorage.getItem('lourdes_families');
+            const cachedExpenses = localStorage.getItem('lourdes_expenses');
+            
+            if (cachedFamilies) {
+                try {
+                    appState.families = JSON.parse(cachedFamilies);
+                } catch(e) {
+                    appState.families = [];
+                }
+            }
+            
+            if (cachedExpenses) {
+                try {
+                    appState.expenses = JSON.parse(cachedExpenses);
+                } catch(e) {
+                    appState.expenses = [];
+                }
+            }
+        }
+
+        // Sauvegarder dans le cache local
+        function saveToCache() {
+            localStorage.setItem('lourdes_families', JSON.stringify(appState.families));
+            localStorage.setItem('lourdes_expenses', JSON.stringify(appState.expenses));
+        }
+
+        // Synchroniser DEPUIS Google Sheets (import uniquement, pas de loading visible)
+        async function syncFromSheets() {
+            if (appState.syncInProgress) return;
+            
+            appState.syncInProgress = true;
+            updateSyncStatus('syncing');
+            
+            try {
+                // Lire depuis Google Sheets via CSV (plus rapide)
+                const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
+                
+                // Essayer de lire les familles
+                const familiesUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Familles`;
+                const expensesUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Dépenses`;
+                
+                // Récupérer les données en parallèle pour gagner du temps
+                const [familiesResponse, expensesResponse] = await Promise.all([
+                    fetch(familiesUrl).catch(() => null),
+                    fetch(expensesUrl).catch(() => null)
+                ]);
+                
+                if (familiesResponse && familiesResponse.ok) {
+                    const familiesCSV = await familiesResponse.text();
+                    const families = parseCSV(familiesCSV);
+                    if (families.length > 1) {
+                        appState.families = families.slice(1).map(row => ({
+                            id: row[0] || Date.now() + Math.random(),
+                            name: row[1],
+                            members: parseInt(row[2]) || 1,
+                            date: row[3]
+                        })).filter(f => f.name);
+                    }
+                }
+                
+                if (expensesResponse && expensesResponse.ok) {
+                    const expensesCSV = await expensesResponse.text();
+                    const expenses = parseCSV(expensesCSV);
+                    if (expenses.length > 1) {
+                        appState.expenses = expenses.slice(1).map(row => ({
+                            id: row[0] || Date.now() + Math.random(),
+                            familyId: row[1],
+                            amount: parseFloat(row[2]) || 0,
+                            description: row[3],
+                            date: row[4],
+                            year: row[5] || appState.currentYear
+                        })).filter(e => e.familyId && e.amount > 0);
+                    }
+                }
+                
+                // Sauvegarder dans le cache
+                saveToCache();
+                
+                // Mettre à jour l'UI seulement si on est sur la bonne page
+                updateUI();
+                
+                appState.lastSync = new Date();
+                updateSyncStatus('synced');
+                
+            } catch (error) {
+                console.error('Erreur sync:', error);
+                updateSyncStatus('error');
+            } finally {
+                appState.syncInProgress = false;
+            }
+        }
+
+        // Parser CSV simple
+        function parseCSV(csv) {
+            const lines = csv.split('\n');
+            return lines.map(line => {
+                const values = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        values.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                values.push(current.trim());
+                return values;
+            });
+        }
+
+        // Changement d'onglet SANS rechargement
         function switchTab(tabName) {
-            // Mettre à jour les onglets
+            // Changer immédiatement d'onglet (instantané)
             document.querySelectorAll('.tab').forEach(tab => {
                 tab.classList.remove('active');
             });
             event.target.classList.add('active');
             
-            // Mettre à jour les sections
             document.querySelectorAll('.section').forEach(section => {
                 section.classList.remove('active');
             });
             document.getElementById(tabName).classList.add('active');
             
-            // Synchroniser en arrière-plan (sans loading screen)
-            if (!appState.isSyncing) {
-                syncData(false); // false = pas de loading screen
+            // Mettre à jour l'UI avec les données en mémoire
+            updateUI();
+            
+            // Sync en arrière-plan seulement si ça fait plus de 5 secondes
+            if (!appState.lastSync || (Date.now() - appState.lastSync > 5000)) {
+                syncFromSheets();
             }
         }
 
-        // Afficher/masquer le chargement
-        function showLoading(message = "Un instant...") {
-            const overlay = document.getElementById('loadingOverlay');
-            const text = overlay.querySelector('.loading-text');
-            text.textContent = message;
-            overlay.classList.add('active');
+        // Ajouter une famille (optimisé comme l'app de suivi)
+        async function addFamily() {
+            const name = document.getElementById('familyName').value.trim();
+            const members = parseInt(document.getElementById('familyMembers').value);
             
-            // Désactiver tous les boutons
-            document.querySelectorAll('button, input, select').forEach(el => {
-                el.disabled = true;
-            });
-        }
-
-        function hideLoading() {
-            const overlay = document.getElementById('loadingOverlay');
-            overlay.classList.remove('active');
-            
-            // Réactiver tous les boutons
-            document.querySelectorAll('button, input, select').forEach(el => {
-                el.disabled = false;
-            });
-        }
-
-        // Synchronisation avec Google Sheets
-        async function syncData() {
-            if (appState.isSyncing) return;
-            
-            appState.isSyncing = true;
-            updateSyncStatus('syncing');
-            showLoading('Synchronisation en cours...');
-            
-            try {
-                // Récupération réelle depuis Google Sheets via Apps Script
-                const response = await fetch(SCRIPT_URL + '?action=read');
-                const result = await response.json();
-                
-                if (result.status === 'success' && result.data) {
-                    // Charger les familles
-                    if (result.data.families && result.data.families.length > 0) {
-                        appState.families = result.data.families.map(f => ({
-                            id: f.ID || Date.now() + Math.random(),
-                            name: f.Nom,
-                            members: parseInt(f.Membres) || 1
-                        }));
-                    }
-                    
-                    // Charger les dépenses
-                    if (result.data.expenses && result.data.expenses.length > 0) {
-                        appState.expenses = result.data.expenses.map(e => ({
-                            id: e.ID || Date.now() + Math.random(),
-                            familyId: e.Famille_ID,
-                            amount: parseFloat(e.Montant) || 0,
-                            description: e.Description,
-                            date: e.Date,
-                            year: e.Année || appState.currentYear
-                        }));
-                    }
-                }
-                
-                updateUI();
-                updateSyncStatus('synced');
-            } catch (error) {
-                console.error('Erreur de synchronisation:', error);
-                // En cas d'erreur, utiliser les données locales
-                updateUI();
-                updateSyncStatus('error');
-            } finally {
-                appState.isSyncing = false;
-                hideLoading();
+            if (!name || !members || members < 1) {
+                showError('Veuillez remplir tous les champs correctement');
+                return;
             }
+            
+            // Ne PAS désactiver l'interface
+            // Ajouter immédiatement à l'état local
+            const newFamily = {
+                id: Date.now(),
+                name: name,
+                members: members,
+                date: new Date().toISOString()
+            };
+            
+            appState.families.push(newFamily);
+            saveToCache();
+            
+            // Vider les champs et mettre à jour l'UI immédiatement
+            document.getElementById('familyName').value = '';
+            document.getElementById('familyMembers').value = '';
+            updateUI();
+            
+            showSuccess('Famille ajoutée !');
+            
+            // Envoyer à Google Sheets en arrière-plan (mode no-cors comme l'app de suivi)
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'write',
+                    type: 'family',
+                    data: newFamily
+                })
+            }).catch(err => console.log('Erreur envoi:', err));
+            
+            // Resync après 1 seconde
+            setTimeout(() => syncFromSheets(), 1000);
+        }
+
+        // Ajouter une dépense (optimisé)
+        async function addExpense() {
+            const payerId = document.getElementById('expensePayer').value;
+            const amount = parseFloat(document.getElementById('expenseAmount').value);
+            const description = document.getElementById('expenseDescription').value.trim();
+            
+            if (!payerId || !amount || amount <= 0 || !description) {
+                showError('Veuillez remplir tous les champs correctement');
+                return;
+            }
+            
+            // Ajouter immédiatement à l'état local
+            const newExpense = {
+                id: Date.now(),
+                familyId: payerId,
+                amount: amount,
+                description: description,
+                date: new Date().toISOString(),
+                year: appState.currentYear
+            };
+            
+            appState.expenses.push(newExpense);
+            saveToCache();
+            
+            // Vider les champs et mettre à jour l'UI
+            document.getElementById('expensePayer').value = '';
+            document.getElementById('expenseAmount').value = '';
+            document.getElementById('expenseDescription').value = '';
+            updateUI();
+            
+            showSuccess('Dépense ajoutée !');
+            
+            // Envoyer à Google Sheets en arrière-plan
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'write',
+                    type: 'expense',
+                    data: newExpense
+                })
+            }).catch(err => console.log('Erreur envoi:', err));
+            
+            // Resync après 1 seconde
+            setTimeout(() => syncFromSheets(), 1000);
+        }
+
+        // Supprimer une famille (ADMIN UNIQUEMENT)
+        async function deleteFamily(familyId) {
+            if (!appState.isAdmin) {
+                showError('Accès administrateur requis pour supprimer une famille');
+                return;
+            }
+            
+            const family = appState.families.find(f => f.id === familyId);
+            if (!family) return;
+            
+            if (!confirm(`Êtes-vous sûr de vouloir supprimer "${family.name}" ?`)) {
+                return;
+            }
+            
+            // Supprimer localement
+            appState.families = appState.families.filter(f => f.id !== familyId);
+            appState.expenses = appState.expenses.filter(e => e.familyId !== familyId);
+            saveToCache();
+            updateUI();
+            
+            showSuccess('Famille supprimée !');
+            
+            // Envoyer la suppression à Google Sheets
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'delete',
+                    type: 'family',
+                    id: familyId
+                })
+            }).catch(err => console.log('Erreur suppression:', err));
+            
+            setTimeout(() => syncFromSheets(), 1000);
+        }
+
+        // Modifier le nombre de membres (ADMIN UNIQUEMENT)
+        async function editFamilyMembers(familyId) {
+            if (!appState.isAdmin) {
+                showError('Accès administrateur requis');
+                return;
+            }
+            
+            const family = appState.families.find(f => f.id === familyId);
+            if (!family) return;
+            
+            const newCount = prompt(`Nouveau nombre de membres pour "${family.name}" :`, family.members);
+            if (newCount === null) return;
+            
+            const count = parseInt(newCount);
+            if (isNaN(count) || count < 1) {
+                showError('Nombre invalide');
+                return;
+            }
+            
+            // Modifier localement
+            family.members = count;
+            saveToCache();
+            updateUI();
+            
+            showSuccess('Nombre de membres modifié !');
+            
+            // Envoyer la modification à Google Sheets
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'update',
+                    type: 'family',
+                    data: family
+                })
+            }).catch(err => console.log('Erreur modification:', err));
+            
+            setTimeout(() => syncFromSheets(), 1000);
+        }
+
+        // Supprimer une dépense (ADMIN UNIQUEMENT)
+        async function deleteExpense(expenseId) {
+            if (!appState.isAdmin) {
+                showError('Accès administrateur requis');
+                return;
+            }
+            
+            if (!confirm('Supprimer cette dépense ?')) return;
+            
+            // Supprimer localement
+            appState.expenses = appState.expenses.filter(e => e.id !== expenseId);
+            saveToCache();
+            updateUI();
+            
+            showSuccess('Dépense supprimée !');
+            
+            // Envoyer la suppression à Google Sheets
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'delete',
+                    type: 'expense',
+                    id: expenseId
+                })
+            }).catch(err => console.log('Erreur suppression:', err));
+            
+            setTimeout(() => syncFromSheets(), 1000);
         }
 
         // Forcer la synchronisation
-        function forceSync() {
-            // Forcer avec loading screen
-            syncData(true);
+        async function forceSync() {
+            showLoading('Synchronisation...');
+            
+            // Réinitialiser les données depuis Google Sheets
+            appState.families = [];
+            appState.expenses = [];
+            
+            await syncFromSheets();
+            
+            hideLoading();
+            showSuccess('Données synchronisées !');
         }
 
         // Mettre à jour le statut de synchronisation
@@ -683,125 +999,12 @@
                     text.textContent = 'Synchronisé';
                     break;
                 case 'syncing':
-                    text.textContent = 'Synchronisation...';
+                    text.textContent = 'Sync...';
                     break;
                 case 'error':
                     text.textContent = 'Erreur';
                     break;
             }
-        }
-
-        // Charger les familles
-        async function loadFamilies() {
-            // Simuler le chargement depuis Google Sheets
-            // En production, faire une vraie requête
-            if (appState.families.length === 0) {
-                appState.families = [
-                    { id: 1, name: 'Famille Exemple', members: 4 }
-                ];
-            }
-        }
-
-        // Charger les dépenses
-        async function loadExpenses() {
-            // Simuler le chargement depuis Google Sheets
-            // En production, faire une vraie requête
-            if (appState.expenses.length === 0) {
-                appState.expenses = [
-                    { id: 1, familyId: 1, amount: 50, description: 'Courses', date: new Date() }
-                ];
-            }
-        }
-
-        // Ajouter une famille (optimisé)
-        async function addFamily() {
-            const name = document.getElementById('familyName').value.trim();
-            const members = parseInt(document.getElementById('familyMembers').value);
-            
-            if (!name || !members || members < 1) {
-                showError('Veuillez remplir tous les champs correctement');
-                return;
-            }
-            
-            showLoading('Ajout de la famille...');
-            
-            const newFamily = {
-                id: Date.now(),
-                name: name,
-                members: members
-            };
-            
-            // Ajouter localement d'abord pour réactivité
-            appState.families.push(newFamily);
-            localStorage.setItem('families_cache', JSON.stringify(appState.families));
-            
-            // Mettre à jour l'UI immédiatement
-            document.getElementById('familyName').value = '';
-            document.getElementById('familyMembers').value = '';
-            updateUI();
-            
-            // Sauvegarder dans Google Sheets en arrière-plan
-            await saveToSheets('family', newFamily);
-            
-            hideLoading();
-            showSuccess('Famille ajoutée avec succès');
-            
-            // Resynchroniser en arrière-plan après 1 seconde
-            setTimeout(() => syncData(false), 1000);
-        }
-
-        // Supprimer une famille
-        async function deleteFamily(familyId) {
-            if (!confirm('Êtes-vous sûr de vouloir supprimer cette famille ?')) return;
-            
-            appState.families = appState.families.filter(f => f.id !== familyId);
-            appState.expenses = appState.expenses.filter(e => e.familyId !== familyId);
-            
-            updateUI();
-            showSuccess('Famille supprimée');
-            syncData();
-        }
-
-        // Ajouter une dépense (optimisé)
-        async function addExpense() {
-            const payerId = document.getElementById('expensePayer').value;
-            const amount = parseFloat(document.getElementById('expenseAmount').value);
-            const description = document.getElementById('expenseDescription').value.trim();
-            
-            if (!payerId || !amount || amount <= 0 || !description) {
-                showError('Veuillez remplir tous les champs correctement');
-                return;
-            }
-            
-            showLoading('Enregistrement de la dépense...');
-            
-            const newExpense = {
-                id: Date.now(),
-                familyId: parseInt(payerId),
-                amount: amount,
-                description: description,
-                date: new Date().toISOString(),
-                year: appState.currentYear
-            };
-            
-            // Ajouter localement d'abord pour réactivité
-            appState.expenses.push(newExpense);
-            localStorage.setItem('expenses_cache', JSON.stringify(appState.expenses));
-            
-            // Mettre à jour l'UI immédiatement
-            document.getElementById('expensePayer').value = '';
-            document.getElementById('expenseAmount').value = '';
-            document.getElementById('expenseDescription').value = '';
-            updateUI();
-            
-            // Sauvegarder dans Google Sheets en arrière-plan
-            await saveToSheets('expense', newExpense);
-            
-            hideLoading();
-            showSuccess('Dépense ajoutée avec succès');
-            
-            // Resynchroniser en arrière-plan après 1 seconde
-            setTimeout(() => syncData(false), 1000);
         }
 
         // Calculer le bilan
@@ -815,7 +1018,7 @@
             
             const familyBalances = appState.families.map(family => {
                 const familyPaid = appState.expenses
-                    .filter(e => e.familyId === family.id)
+                    .filter(e => e.familyId == family.id)
                     .reduce((sum, e) => sum + e.amount, 0);
                 
                 const familyOwes = costPerPerson * family.members;
@@ -864,7 +1067,7 @@
             return transfers;
         }
 
-        // Mettre à jour l'interface
+        // Mettre à jour l'interface complète
         function updateUI() {
             updateFamiliesList();
             updateExpensesList();
@@ -877,13 +1080,19 @@
             const container = document.getElementById('familiesList');
             
             if (appState.families.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: #6b7280;">Aucune famille enregistrée</p>';
+                container.innerHTML = '<p style="text-align: center; color: #6b7280; margin-top: 30px;">Aucune famille enregistrée</p>';
                 return;
             }
             
+            // IMPORTANT : N'afficher les boutons de suppression/modification QUE si admin
             container.innerHTML = appState.families.map(family => `
                 <div class="family-card">
-                    <button class="family-delete" onclick="deleteFamily(${family.id})">×</button>
+                    ${appState.isAdmin ? `
+                        <div class="family-actions">
+                            <button class="family-edit" onclick="editFamilyMembers(${family.id})" title="Modifier">✏️</button>
+                            <button class="family-delete" onclick="deleteFamily(${family.id})" title="Supprimer">×</button>
+                        </div>
+                    ` : ''}
                     <div class="family-name">${family.name}</div>
                     <div class="family-members">👥 ${family.members} membre${family.members > 1 ? 's' : ''}</div>
                 </div>
@@ -903,7 +1112,7 @@
             }
             
             container.innerHTML = recentExpenses.map(expense => {
-                const family = appState.families.find(f => f.id === expense.familyId);
+                const family = appState.families.find(f => f.id == expense.familyId);
                 return `
                     <div class="expense-item">
                         <div class="expense-info">
@@ -911,7 +1120,12 @@
                             <span style="color: #6b7280;">${expense.description}</span><br>
                             <small style="color: #9ca3af;">${new Date(expense.date).toLocaleDateString('fr-FR')}</small>
                         </div>
-                        <div class="expense-amount">${expense.amount.toFixed(2)} €</div>
+                        <div style="display: flex; align-items: center;">
+                            <div class="expense-amount">${expense.amount.toFixed(2)} €</div>
+                            ${appState.isAdmin ? `
+                                <button class="expense-delete" onclick="deleteExpense(${expense.id})">🗑️</button>
+                            ` : ''}
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -930,7 +1144,6 @@
                 return;
             }
             
-            // Afficher le résumé
             const totalExpenses = appState.expenses.reduce((sum, e) => sum + e.amount, 0);
             const totalPeople = appState.families.reduce((sum, f) => sum + f.members, 0);
             
@@ -1002,8 +1215,8 @@
                 document.getElementById('adminPanel').classList.remove('hidden');
                 document.getElementById('logoutBtn').style.display = 'inline-block';
                 document.getElementById('adminCode').value = '';
-                showSuccess('Accès administrateur activé');
-                updateUI(); // Rafraîchir l'interface pour montrer les boutons admin
+                showSuccess('✅ Mode administrateur activé - Vous pouvez maintenant modifier/supprimer');
+                updateUI(); // IMPORTANT : Rafraîchir pour montrer les boutons admin
             } else {
                 showError('Code incorrect');
             }
@@ -1014,13 +1227,22 @@
             appState.isAdmin = false;
             document.getElementById('adminPanel').classList.add('hidden');
             document.getElementById('logoutBtn').style.display = 'none';
-            updateUI();
+            updateUI(); // IMPORTANT : Rafraîchir pour cacher les boutons admin
             showSuccess('Mode administrateur désactivé');
         }
 
         // Confirmer la nouvelle année
         function confirmResetYear() {
-            if (!confirm('⚠️ ATTENTION !\n\nCette action va archiver toutes les données de l\'année en cours.\nLes familles seront conservées mais toutes les dépenses seront effacées.\n\nÊtes-vous sûr de vouloir commencer une nouvelle année ?')) {
+            if (!appState.isAdmin) {
+                showError('Accès administrateur requis');
+                return;
+            }
+            
+            if (!confirm('⚠️ ATTENTION !\n\nCette action va archiver toutes les données de l\'année en cours.\nLes familles seront conservées mais toutes les dépenses seront effacées.\n\nÊtes-vous sûr ?')) {
+                return;
+            }
+            
+            if (!confirm('Dernière confirmation pour la nouvelle année ?')) {
                 return;
             }
             
@@ -1031,47 +1253,69 @@
         async function resetYear() {
             showLoading('Initialisation de la nouvelle année...');
             
-            // Archiver l'année actuelle (garder les familles, effacer les dépenses)
+            // Archiver l'année actuelle
             appState.currentYear = new Date().getFullYear();
             appState.expenses = [];
-            
-            // Sauvegarder le changement
-            await saveToSheets('reset_year', { year: appState.currentYear });
-            
+            saveToCache();
             updateUI();
-            hideLoading();
-            showSuccess(`Nouvelle année ${appState.currentYear} initialisée. Les dépenses ont été effacées.`);
             
-            setTimeout(() => syncData(), 1000);
+            // Envoyer à Google Sheets
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'reset_year',
+                    year: appState.currentYear
+                })
+            }).catch(err => console.log('Erreur reset:', err));
+            
+            hideLoading();
+            showSuccess(`Nouvelle année ${appState.currentYear} initialisée !`);
+            
+            setTimeout(() => syncFromSheets(), 1000);
         }
 
-        // Tout effacer (admin uniquement)
+        // Tout effacer
         async function clearAllData() {
             if (!appState.isAdmin) {
                 showError('Accès administrateur requis');
                 return;
             }
             
-            if (!confirm('⚠️ DANGER !\n\nCette action va TOUT EFFACER définitivement :\n- Toutes les familles\n- Toutes les dépenses\n- Toutes les données\n\nCette action est IRRÉVERSIBLE !\n\nÊtes-vous VRAIMENT sûr ?')) {
+            if (!confirm('⚠️ DANGER !\n\nTout effacer définitivement ?')) {
                 return;
             }
             
-            if (!confirm('🔴 DERNIÈRE CONFIRMATION\n\nTOUT sera supprimé définitivement.\n\nConfirmer la suppression totale ?')) {
+            if (!confirm('🔴 DERNIÈRE CONFIRMATION\n\nTOUT sera supprimé. Continuer ?')) {
                 return;
             }
             
-            showLoading('Suppression de toutes les données...');
+            showLoading('Suppression totale...');
             
             appState.families = [];
             appState.expenses = [];
-            
-            await saveToSheets('clear_all', {});
-            
+            saveToCache();
             updateUI();
+            
+            // Envoyer à Google Sheets
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'clear_all'
+                })
+            }).catch(err => console.log('Erreur clear:', err));
+            
             hideLoading();
             showSuccess('Toutes les données ont été effacées');
             
-            setTimeout(() => syncData(), 1000);
+            setTimeout(() => syncFromSheets(), 1000);
         }
 
         // Exporter les données
@@ -1090,147 +1334,57 @@
             a.download = `lourdes-export-${appState.currentYear}.json`;
             a.click();
             
-            showSuccess('Données exportées');
+            showSuccess('Données exportées !');
         }
 
-        // Sauvegarder dans Google Sheets
-        async function saveToSheets(type, data) {
-            try {
-                let url = SCRIPT_URL;
-                let params = new URLSearchParams();
-                
-                params.append('action', 'write');
-                params.append('type', type);
-                params.append('data', JSON.stringify(data));
-                
-                const response = await fetch(url + '?' + params.toString());
-                const result = await response.json();
-                
-                if (result.status !== 'success') {
-                    throw new Error('Erreur de sauvegarde');
-                }
-                
-                return result;
-            } catch (error) {
-                console.error('Erreur de sauvegarde:', error);
-                // Continuer même si la sauvegarde échoue
-                return Promise.resolve();
-            }
+        // Afficher/masquer le chargement
+        function showLoading(message = "Un instant...") {
+            const overlay = document.getElementById('loadingOverlay');
+            const text = overlay.querySelector('.loading-text');
+            text.textContent = message;
+            overlay.classList.add('active');
         }
 
-        // Afficher un message d'erreur
-        function showError(message) {
-            showMessage(message, 'error');
+        function hideLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.classList.remove('active');
         }
 
-        // Afficher un message de succès
-        function showSuccess(message) {
-            showMessage(message, 'success');
-        }
-
-        // Afficher un message
+        // Messages
         function showMessage(message, type) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = type === 'error' ? 'error-message' : 'success-message';
-            messageDiv.textContent = message;
-            messageDiv.style.position = 'fixed';
-            messageDiv.style.bottom = '20px';
-            messageDiv.style.left = '50%';
-            messageDiv.style.transform = 'translateX(-50%)';
-            messageDiv.style.zIndex = '1000';
-            messageDiv.style.maxWidth = '90%';
-            messageDiv.style.animation = 'slideUp 0.3s ease-out';
-            
-            document.body.appendChild(messageDiv);
+            const div = document.createElement('div');
+            div.className = type === 'error' ? 'error-message' : 'success-message';
+            div.textContent = message;
+            document.body.appendChild(div);
             
             setTimeout(() => {
-                messageDiv.style.animation = 'slideDown 0.3s ease-out';
+                div.style.animation = 'slideDown 0.3s ease-out';
                 setTimeout(() => {
-                    document.body.removeChild(messageDiv);
+                    document.body.removeChild(div);
                 }, 300);
             }, 3000);
         }
 
-        // Animation CSS pour les messages
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideUp {
-                from { bottom: -100px; opacity: 0; }
-                to { bottom: 20px; opacity: 1; }
-            }
-            @keyframes slideDown {
-                from { bottom: 20px; opacity: 1; }
-                to { bottom: -100px; opacity: 0; }
-            }
-            @media (max-width: 768px) {
-                .container {
-                    border-radius: 0;
-                    min-height: 100vh;
-                }
-                body {
-                    padding: 0;
-                }
-                .header h1 {
-                    font-size: 1.5em;
-                }
-                .tabs {
-                    position: fixed;
-                    bottom: 0;
-                    left: 0;
-                    right: 0;
-                    background: white;
-                    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-                    z-index: 100;
-                    padding: 5px;
-                }
-                .tab {
-                    font-size: 0.9em;
-                    padding: 12px 5px;
-                }
-                .content {
-                    padding: 20px;
-                    padding-bottom: 100px;
-                }
-                input[type="number"] {
-                    font-size: 16px; /* Empêche le zoom sur iOS */
-                }
-            }
-        `;
-        document.head.appendChild(style);
-
-        // Fonction pour lire depuis Google Sheets (via CSV export)
-        async function readFromSheets() {
-            try {
-                // URL pour export CSV (remplacer SHEET_ID par votre ID)
-                const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
-                
-                // Pour contourner CORS, vous devrez utiliser un proxy ou Google Apps Script
-                // Ici, on simule la lecture
-                console.log('Lecture depuis Google Sheets...');
-                
-                // En production, utilisez Google Apps Script comme endpoint
-                return Promise.resolve();
-            } catch (error) {
-                console.error('Erreur de lecture:', error);
-                throw error;
-            }
+        function showError(message) {
+            showMessage(message, 'error');
         }
 
-        // Gestionnaire pour les boutons tactiles sur mobile
-        document.querySelectorAll('.btn, .tab, .sync-button').forEach(button => {
-            button.addEventListener('touchstart', function() {
-                this.style.transform = 'scale(0.95)';
-            });
-            button.addEventListener('touchend', function() {
-                this.style.transform = '';
-            });
+        function showSuccess(message) {
+            showMessage(message, 'success');
+        }
+
+        // Sync au focus/visibility
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && appState.lastSync && (Date.now() - appState.lastSync > 10000)) {
+                syncFromSheets();
+            }
         });
 
-        // Empêcher le scroll élastique sur iOS
-        document.addEventListener('touchmove', function(e) {
-            if (e.target.closest('.content')) return;
-            e.preventDefault();
-        }, { passive: false });
-    </script>
-</body>
-</html>
+        window.addEventListener('focus', () => {
+            if (appState.lastSync && (Date.now() - appState.lastSync > 10000)) {
+                syncFromSheets();
+            }
+        });
+
+        // Initialiser l'app au chargement
+        document.addEventListener('DOMContentLoaded', initApp);
