@@ -668,7 +668,7 @@
     <script>
         // Configuration
         const SHEET_ID = '1jKYQJXIdB-b5MjvSkiM5QVMqNNEJUjSGe-1sCZvEkEo';
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwCBDGHPOefn_0LOPC5LF18JsUtaD9rO_5Cr8myQwXOrxvfzFPUNoeunEDmiujAXR6ytA/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwUrAaGSxspiC4OL_QFitb9-74eM1W9ywAzZMYNfP0sMAUDb2GHd6-2agmcobaybPABKg/exec';
         
         // État global de l'application
         window.appState = {
@@ -761,60 +761,127 @@
             updateSyncStatus('syncing');
             
             try {
-                // Lire via Google Apps Script pour avoir toutes les données
-                const response = await fetch(SCRIPT_URL + '?action=read');
-                const result = await response.json();
+                // Lire directement le CSV de l'onglet Data (plus rapide)
+                const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Data`;
                 
-                if (result.status === 'success' && result.data) {
-                    // Traiter les familles
-                    if (result.data.families && Array.isArray(result.data.families)) {
-                        window.appState.families = result.data.families
-                            .filter(f => f.ID && f.Nom) // Filtrer les lignes vides
-                            .map(f => ({
-                                id: f.ID,
-                                name: f.Nom,
-                                members: parseInt(f.Membres) || 1,
-                                date: f.Date_Ajout
-                            }));
-                    }
-                    
-                    // Traiter les dépenses
-                    if (result.data.expenses && Array.isArray(result.data.expenses)) {
-                        window.appState.expenses = result.data.expenses
-                            .filter(e => e.ID && e.Montant) // Filtrer les lignes vides
-                            .map(e => ({
-                                id: e.ID,
-                                familyId: e.Famille_ID,
-                                amount: parseFloat(e.Montant) || 0,
-                                description: e.Description || '',
-                                date: e.Date || new Date().toLocaleDateString('fr-FR'),
-                                year: parseInt(e.Année) || window.appState.currentYear
-                            }));
-                    }
-                    
-                    console.log('Données synchronisées:', window.appState);
-                    
-                    // Sauvegarder en cache
-                    saveToCache();
-                    
-                    // Mettre à jour l'interface
-                    updateUI();
-                    
-                    window.appState.lastSync = new Date();
-                    updateSyncStatus('synced');
-                    
-                } else {
-                    throw new Error('Données invalides reçues');
+                const response = await fetch(csvUrl);
+                if (!response.ok) {
+                    throw new Error('Impossible de lire le Google Sheet');
                 }
+                
+                const csvText = await response.text();
+                console.log('CSV reçu, parsing...');
+                
+                // Parser le CSV de l'onglet Data
+                parseDataSheet(csvText);
+                
+                // Sauvegarder en cache
+                saveToCache();
+                
+                // Mettre à jour l'interface
+                updateUI();
+                
+                window.appState.lastSync = new Date();
+                updateSyncStatus('synced');
                 
             } catch (error) {
                 console.error('Erreur de synchronisation:', error);
                 updateSyncStatus('error');
-                // Utiliser le cache en cas d'erreur
-                showMessage('Erreur de connexion. Mode hors ligne activé.', 'error');
+                showMessage('Mode hors ligne - Utilisation du cache', 'error');
             } finally {
                 window.appState.isSyncing = false;
             }
+        }
+
+        // Parser le CSV de l'onglet Data unique
+        function parseDataSheet(csv) {
+            const lines = csv.split('\n');
+            const families = [];
+            const expenses = [];
+            
+            // Parcourir les lignes (ignorer l'en-tête)
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                // Parser la ligne CSV
+                const values = parseCSVLine(line);
+                
+                // Structure: Type, ID, Nom, Membres, Montant, Description, Date, Supprimé
+                const type = values[0];
+                const id = values[1];
+                const supprime = values[7];
+                
+                // Ignorer les lignes supprimées
+                if (supprime && supprime.trim() !== '') continue;
+                
+                if (type === '"FAM"' || type === 'FAM') {
+                    const family = {
+                        id: id.replace(/"/g, ''),
+                        name: values[2].replace(/"/g, ''),
+                        members: parseInt(values[3]) || 1
+                    };
+                    
+                    if (family.id && family.name) {
+                        families.push(family);
+                    }
+                    
+                } else if (type === '"DEP"' || type === 'DEP') {
+                    const expense = {
+                        id: id.replace(/"/g, ''),
+                        familyName: values[2].replace(/"/g, ''),
+                        amount: parseFloat(values[4]) || 0,
+                        description: values[5].replace(/"/g, ''),
+                        date: values[6].replace(/"/g, '') || new Date().toLocaleDateString('fr-FR')
+                    };
+                    
+                    // Trouver l'ID de la famille correspondante
+                    const family = families.find(f => f.name === expense.familyName);
+                    if (family) {
+                        expense.familyId = family.id;
+                    }
+                    
+                    if (expense.id && expense.amount > 0) {
+                        expenses.push({
+                            ...expense,
+                            year: window.appState.currentYear
+                        });
+                    }
+                }
+            }
+            
+            console.log(`Données trouvées: ${families.length} familles, ${expenses.length} dépenses`);
+            
+            window.appState.families = families;
+            window.appState.expenses = expenses;
+        }
+
+        // Parser une ligne CSV proprement
+        function parseCSVLine(line) {
+            const values = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    values.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            values.push(current.trim());
+            
+            // S'assurer d'avoir au moins 8 colonnes
+            while (values.length < 8) {
+                values.push('');
+            }
+            
+            return values;
         }
 
         // Forcer la synchronisation
@@ -1387,12 +1454,68 @@
         // ============= SAUVEGARDE GOOGLE SHEETS =============
         async function saveToSheets(action, data) {
             try {
-                const url = SCRIPT_URL + '?action=write&type=' + action + '&data=' + encodeURIComponent(JSON.stringify(data));
+                let payload = {};
                 
-                // Mode no-cors pour la rapidité (comme l'app de suivi)
-                await fetch(url, { mode: 'no-cors' });
+                // Adapter selon l'action pour le nouveau script
+                if (action === 'family') {
+                    payload = {
+                        type: 'FAM',
+                        id: data.id,
+                        name: data.name,
+                        members: data.members,
+                        action: 'add'
+                    };
+                } else if (action === 'expense') {
+                    // Trouver le nom de la famille
+                    const family = window.appState.families.find(f => f.id === data.familyId);
+                    payload = {
+                        type: 'DEP',
+                        id: data.id,
+                        familyName: family ? family.name : 'Inconnue',
+                        amount: data.amount,
+                        description: data.description,
+                        date: data.date,
+                        action: 'add'
+                    };
+                } else if (action === 'delete_family' || action === 'delete_expense') {
+                    payload = {
+                        action: 'delete',
+                        id: data.id
+                    };
+                } else if (action === 'update_family') {
+                    payload = {
+                        action: 'update',
+                        type: 'FAM',
+                        id: data.id,
+                        members: data.members
+                    };
+                } else if (action === 'clear_all') {
+                    // Pour clear all, on devra marquer toutes les lignes comme supprimées
+                    // ou utiliser une fonction spéciale dans le script
+                    payload = {
+                        action: 'clear_all'
+                    };
+                } else if (action === 'reset_year') {
+                    // Pour reset year, supprimer seulement les dépenses
+                    payload = {
+                        action: 'reset_year',
+                        year: data.year
+                    };
+                }
                 
+                // Envoyer via POST
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // Mode no-cors pour la rapidité
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                console.log('Données envoyées:', payload);
                 return true;
+                
             } catch (error) {
                 console.error('Erreur sauvegarde:', error);
                 return false;
