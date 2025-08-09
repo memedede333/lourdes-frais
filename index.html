@@ -664,7 +664,7 @@
             localStorage.setItem('lourdes_expenses', JSON.stringify(window.appState.expenses));
         }
 
-        // Synchronisation depuis Google Sheets
+        // Synchronisation depuis Google Sheets (lecture)
         async function syncFromSheets() {
             if (window.appState.syncInProgress) return;
             
@@ -672,10 +672,66 @@
             updateSyncStatus('syncing');
             
             try {
-                // Pour l'instant, on simule la synchronisation
-                // En production, utiliser l'API Google Sheets
-                console.log('Synchronisation en cours...');
+                // Lire depuis Google Sheets via CSV (comme l'app de suivi)
+                const csvUrlFamilies = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Familles`;
+                const csvUrlExpenses = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Dépenses`;
                 
+                // Récupérer les familles
+                try {
+                    const responseFamilies = await fetch(csvUrlFamilies);
+                    if (responseFamilies.ok) {
+                        const csvText = await responseFamilies.text();
+                        const families = parseCSV(csvText);
+                        
+                        if (families.length > 1) {
+                            window.appState.families = [];
+                            for (let i = 1; i < families.length; i++) {
+                                const row = families[i];
+                                if (row[0] && row[1]) { // ID et Nom existent
+                                    window.appState.families.push({
+                                        id: row[0],
+                                        name: row[1],
+                                        members: parseInt(row[2]) || 1,
+                                        date: row[3] || ''
+                                    });
+                                }
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.log('Erreur lecture familles:', e);
+                }
+                
+                // Récupérer les dépenses
+                try {
+                    const responseExpenses = await fetch(csvUrlExpenses);
+                    if (responseExpenses.ok) {
+                        const csvText = await responseExpenses.text();
+                        const expenses = parseCSV(csvText);
+                        
+                        if (expenses.length > 1) {
+                            window.appState.expenses = [];
+                            for (let i = 1; i < expenses.length; i++) {
+                                const row = expenses[i];
+                                if (row[0] && row[1] && row[2]) { // ID, Famille_ID et Montant existent
+                                    window.appState.expenses.push({
+                                        id: row[0],
+                                        familyId: row[1],
+                                        amount: parseFloat(row[2]) || 0,
+                                        description: row[3] || '',
+                                        date: row[4] || '',
+                                        year: row[5] || window.appState.currentYear
+                                    });
+                                }
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.log('Erreur lecture dépenses:', e);
+                }
+                
+                saveToCache();
+                updateUI();
                 window.appState.lastSync = new Date();
                 updateSyncStatus('synced');
                 
@@ -685,6 +741,36 @@
             } finally {
                 window.appState.syncInProgress = false;
             }
+        }
+        
+        // Parser CSV
+        function parseCSV(csv) {
+            const lines = csv.split('\n');
+            const result = [];
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                const values = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (let j = 0; j < line.length; j++) {
+                    const char = line[j];
+                    
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        values.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                values.push(current.trim());
+                result.push(values);
+            }
+            
+            return result;
         }
 
         // Changement d'onglet
@@ -770,22 +856,31 @@
             sendToSheets('expense', newExpense);
         }
 
-        // Envoyer à Google Sheets
-        function sendToSheets(type, data) {
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    action: 'write',
-                    type: type,
-                    data: data
-                })
-            }).catch(err => console.log('Erreur envoi:', err));
-            
-            setTimeout(() => syncFromSheets(), 1000);
+        // Envoyer à Google Sheets (écriture via Apps Script)
+        async function sendToSheets(type, data) {
+            try {
+                // Utiliser fetch avec POST comme dans l'app de suivi
+                const url = SCRIPT_URL;
+                const params = new URLSearchParams();
+                
+                params.append('action', 'write');
+                params.append('type', type);
+                params.append('data', JSON.stringify(data));
+                
+                // Mode no-cors pour ne pas attendre la réponse (plus rapide)
+                await fetch(url + '?' + params.toString(), {
+                    method: 'GET', // GET car Apps Script avec doGet
+                    mode: 'no-cors'
+                });
+                
+                console.log(`${type} envoyé à Google Sheets`);
+                
+                // Re-synchroniser après 1 seconde
+                setTimeout(() => syncFromSheets(), 1000);
+                
+            } catch (error) {
+                console.error('Erreur envoi:', error);
+            }
         }
 
         // Fonctions globales pour les onclick inline
