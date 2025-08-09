@@ -563,11 +563,17 @@
         };
 
         // Initialisation
-        document.addEventListener('DOMContentLoaded', function() {
-            syncData();
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Charger d'abord depuis le cache pour affichage immédiat
+            await loadFamilies();
+            await loadExpenses();
+            updateUI();
+            
+            // Puis synchroniser en arrière-plan
+            syncData(false);
         });
 
-        // Changement d'onglet
+        // Changement d'onglet SANS rechargement systématique
         function switchTab(tabName) {
             // Mettre à jour les onglets
             document.querySelectorAll('.tab').forEach(tab => {
@@ -581,8 +587,10 @@
             });
             document.getElementById(tabName).classList.add('active');
             
-            // Synchroniser à chaque changement d'onglet
-            syncData();
+            // Synchroniser en arrière-plan (sans loading screen)
+            if (!appState.isSyncing) {
+                syncData(false); // false = pas de loading screen
+            }
         }
 
         // Afficher/masquer le chargement
@@ -659,7 +667,8 @@
 
         // Forcer la synchronisation
         function forceSync() {
-            syncData();
+            // Forcer avec loading screen
+            syncData(true);
         }
 
         // Mettre à jour le statut de synchronisation
@@ -704,7 +713,7 @@
             }
         }
 
-        // Ajouter une famille
+        // Ajouter une famille (optimisé)
         async function addFamily() {
             const name = document.getElementById('familyName').value.trim();
             const members = parseInt(document.getElementById('familyMembers').value);
@@ -722,21 +731,23 @@
                 members: members
             };
             
+            // Ajouter localement d'abord pour réactivité
             appState.families.push(newFamily);
+            localStorage.setItem('families_cache', JSON.stringify(appState.families));
             
-            // Sauvegarder dans Google Sheets
-            await saveToSheets('family', newFamily);
-            
-            // Réinitialiser le formulaire
+            // Mettre à jour l'UI immédiatement
             document.getElementById('familyName').value = '';
             document.getElementById('familyMembers').value = '';
-            
             updateUI();
+            
+            // Sauvegarder dans Google Sheets en arrière-plan
+            await saveToSheets('family', newFamily);
+            
             hideLoading();
             showSuccess('Famille ajoutée avec succès');
             
-            // Resynchroniser après ajout
-            setTimeout(() => syncData(), 1000);
+            // Resynchroniser en arrière-plan après 1 seconde
+            setTimeout(() => syncData(false), 1000);
         }
 
         // Supprimer une famille
@@ -751,7 +762,7 @@
             syncData();
         }
 
-        // Ajouter une dépense
+        // Ajouter une dépense (optimisé)
         async function addExpense() {
             const payerId = document.getElementById('expensePayer').value;
             const amount = parseFloat(document.getElementById('expenseAmount').value);
@@ -773,22 +784,24 @@
                 year: appState.currentYear
             };
             
+            // Ajouter localement d'abord pour réactivité
             appState.expenses.push(newExpense);
+            localStorage.setItem('expenses_cache', JSON.stringify(appState.expenses));
             
-            // Sauvegarder dans Google Sheets
-            await saveToSheets('expense', newExpense);
-            
-            // Réinitialiser le formulaire
+            // Mettre à jour l'UI immédiatement
             document.getElementById('expensePayer').value = '';
             document.getElementById('expenseAmount').value = '';
             document.getElementById('expenseDescription').value = '';
-            
             updateUI();
+            
+            // Sauvegarder dans Google Sheets en arrière-plan
+            await saveToSheets('expense', newExpense);
+            
             hideLoading();
             showSuccess('Dépense ajoutée avec succès');
             
-            // Resynchroniser après ajout
-            setTimeout(() => syncData(), 1000);
+            // Resynchroniser en arrière-plan après 1 seconde
+            setTimeout(() => syncData(false), 1000);
         }
 
         // Calculer le bilan
