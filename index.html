@@ -206,6 +206,7 @@
             transition: all 0.2s;
             position: relative;
             overflow: hidden;
+            line-height: 1.4;
         }
 
         .btn:hover {
@@ -509,6 +510,9 @@
             color: white;
             font-size: 1.1em;
             margin-top: 20px;
+            text-align: center;
+            line-height: 1.5;
+            white-space: pre-line;
         }
 
         .empty-state {
@@ -720,7 +724,7 @@
         <h3>Administration</h3>
         <div class="form-group">
             <label>Code admin</label>
-            <input type="password" id="adminCode" placeholder="Entrer le code ?">
+            <input type="password" id="adminCode" placeholder="Entrer le code 333">
         </div>
         <button class="btn btn-small" onclick="window.checkAdmin()">Valider</button>
         <button class="btn btn-small btn-danger" onclick="window.logoutAdmin()" style="display: none;" id="logoutBtn">Déconnexion</button>
@@ -1029,9 +1033,9 @@
             isAddingFamily = true;
             const btn = document.getElementById('addFamilyBtn');
             btn.disabled = true;
-            btn.textContent = 'Ajout en cours...';
+            btn.innerHTML = 'Ajout de la famille...<br><small style="font-size: 0.8em;">🙏 Sois patient, Jésus t\'aime 🙏</small>';
             
-            showLoading('Ajout de la famille...');
+            showLoading('Ajout de la famille...\n🙏 Sois patient, Jésus t\'aime 🙏');
             
             try {
                 const newFamily = {
@@ -1066,7 +1070,7 @@
             } finally {
                 isAddingFamily = false;
                 btn.disabled = false;
-                btn.textContent = 'Ajouter la famille';
+                btn.innerHTML = 'Ajouter la famille';
             }
         }
 
@@ -1144,9 +1148,9 @@
             isAddingExpense = true;
             const btn = document.getElementById('addExpenseBtn');
             btn.disabled = true;
-            btn.textContent = 'Ajout en cours...';
+            btn.innerHTML = 'Ajout de la dépense...<br><small style="font-size: 0.8em;">🙏 Sois patient, Jésus t\'aime 🙏</small>';
             
-            showLoading('Enregistrement de la dépense...');
+            showLoading('Enregistrement de la dépense...\n🙏 Sois patient, Jésus t\'aime 🙏');
             
             try {
                 const newExpense = {
@@ -1183,7 +1187,7 @@
             } finally {
                 isAddingExpense = false;
                 btn.disabled = false;
-                btn.textContent = 'Ajouter la dépense';
+                btn.innerHTML = 'Ajouter la dépense';
             }
         }
 
