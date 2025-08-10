@@ -134,6 +134,21 @@
             box-shadow: 0 5px 15px rgba(0,102,204,0.4);
         }
 
+        .tab-icon {
+            display: none;
+        }
+
+        .tab-text {
+            display: inline;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #0066cc 0%, #4da6ff 100%);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,102,204,0.4);
+        }
+
         .content {
             padding: 25px;
             padding-bottom: 100px;
@@ -522,20 +537,52 @@
                 font-size: 1.5em;
             }
             
+            /* Menu en bas style natif mobile */
             .tabs {
                 position: fixed;
                 bottom: 0;
                 left: 0;
                 right: 0;
-                background: white;
-                box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+                background: rgba(255,255,255,0.98);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                border-top: 1px solid rgba(0,0,0,0.1);
+                box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
                 z-index: 100;
-                padding: 5px;
+                padding: 8px 16px;
+                padding-bottom: env(safe-area-inset-bottom, 20px);
+                gap: 5px;
             }
             
             .tab {
                 font-size: 0.9em;
                 padding: 10px 5px;
+                background: transparent;
+                border-radius: 12px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 4px;
+                transform: none;
+            }
+            
+            .tab.active {
+                background: rgba(0, 102, 204, 0.1);
+                color: #0066cc;
+                transform: none;
+                box-shadow: none;
+            }
+            
+            /* Icônes visibles sur mobile */
+            .tab-icon {
+                display: block;
+                font-size: 1.3em;
+            }
+            
+            .tab-text {
+                display: block;
+                font-size: 0.75em;
+                font-weight: 500;
             }
             
             .content {
@@ -545,6 +592,27 @@
             
             .families-grid {
                 grid-template-columns: 1fr;
+            }
+            
+            /* Admin en haut sur mobile */
+            .admin-button {
+                position: fixed;
+                top: 15px;
+                right: 15px;
+                bottom: auto;
+                width: 35px;
+                height: 35px;
+                font-size: 1em;
+                background: rgba(255,255,255,0.9);
+                z-index: 101;
+            }
+            
+            .admin-panel {
+                top: 60px;
+                bottom: auto;
+                right: 10px;
+                width: calc(100% - 20px);
+                max-width: 350px;
             }
         }
     </style>
@@ -565,9 +633,18 @@
         </div>
 
         <div class="tabs">
-            <button class="tab active" data-tab="families">👨‍👩‍👧‍👦 Familles</button>
-            <button class="tab" data-tab="expenses">💰 Dépenses</button>
-            <button class="tab" data-tab="balance">📊 Bilan</button>
+            <button class="tab active" data-tab="families">
+                <span class="tab-icon">👨‍👩‍👧‍👦</span>
+                <span class="tab-text">Familles</span>
+            </button>
+            <button class="tab" data-tab="expenses">
+                <span class="tab-icon">💰</span>
+                <span class="tab-text">Dépenses</span>
+            </button>
+            <button class="tab" data-tab="balance">
+                <span class="tab-icon">📊</span>
+                <span class="tab-text">Bilan</span>
+            </button>
         </div>
 
         <div class="content">
@@ -643,7 +720,7 @@
         <h3>Administration</h3>
         <div class="form-group">
             <label>Code admin</label>
-            <input type="password" id="adminCode" placeholder="Entrer le code ?">
+            <input type="password" id="adminCode" placeholder="Entrer le code 333">
         </div>
         <button class="btn btn-small" onclick="window.checkAdmin()">Valider</button>
         <button class="btn btn-small btn-danger" onclick="window.logoutAdmin()" style="display: none;" id="logoutBtn">Déconnexion</button>
@@ -782,7 +859,14 @@
                 updateUI();
                 
                 window.appState.lastSync = new Date();
+                
+                // Afficher l'heure de synchronisation
+                const syncTime = new Date().toLocaleTimeString('fr-FR', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
                 updateSyncStatus('synced');
+                document.getElementById('syncText').textContent = `Sync ${syncTime}`;
                 
             } catch (error) {
                 console.error('Erreur de synchronisation:', error);
@@ -799,6 +883,12 @@
             const families = [];
             const expenses = [];
             
+            // Fonction helper pour nettoyer les valeurs
+            const clean = (str) => {
+                if (!str) return '';
+                return String(str).replace(/^["']|["']$/g, '').trim();
+            };
+            
             // Parcourir les lignes (ignorer l'en-tête)
             for (let i = 1; i < lines.length; i++) {
                 const line = lines[i].trim();
@@ -808,31 +898,31 @@
                 const values = parseCSVLine(line);
                 
                 // Structure: Type, ID, Nom, Membres, Montant, Description, Date, Supprimé
-                const type = values[0];
-                const id = values[1];
-                const supprime = values[7];
+                const type = clean(values[0]);
+                const id = clean(values[1]);
+                const supprime = clean(values[7]);
                 
                 // Ignorer les lignes supprimées
-                if (supprime && supprime.trim() !== '') continue;
+                if (supprime && supprime !== '') continue;
                 
-                if (type === '"FAM"' || type === 'FAM') {
+                if (type === 'FAM') {
                     const family = {
-                        id: id.replace(/"/g, ''),
-                        name: values[2].replace(/"/g, ''),
-                        members: parseInt(values[3]) || 1
+                        id: id,
+                        name: clean(values[2]),
+                        members: parseInt(clean(values[3])) || 1
                     };
                     
                     if (family.id && family.name) {
                         families.push(family);
                     }
                     
-                } else if (type === '"DEP"' || type === 'DEP') {
+                } else if (type === 'DEP') {
                     const expense = {
-                        id: id.replace(/"/g, ''),
-                        familyName: values[2].replace(/"/g, ''),
-                        amount: parseFloat(values[4]) || 0,
-                        description: values[5].replace(/"/g, ''),
-                        date: values[6].replace(/"/g, '') || new Date().toLocaleDateString('fr-FR')
+                        id: id,
+                        familyName: clean(values[2]),
+                        amount: parseFloat(clean(values[4])) || 0,
+                        description: clean(values[5]),
+                        date: clean(values[6]) || new Date().toLocaleDateString('fr-FR')
                     };
                     
                     // Trouver l'ID de la famille correspondante
@@ -1371,7 +1461,33 @@
         // ============= ADMINISTRATION =============
         window.toggleAdmin = function() {
             const panel = document.getElementById('adminPanel');
-            panel.classList.toggle('active');
+            const isActive = panel.classList.contains('active');
+            
+            if (!isActive) {
+                panel.classList.add('active');
+                
+                // Créer un overlay invisible pour détecter les clics externes
+                const overlay = document.createElement('div');
+                overlay.id = 'adminOverlay';
+                overlay.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    z-index: 998;
+                    background: transparent;
+                `;
+                overlay.onclick = () => {
+                    panel.classList.remove('active');
+                    overlay.remove();
+                };
+                document.body.appendChild(overlay);
+            } else {
+                panel.classList.remove('active');
+                const overlay = document.getElementById('adminOverlay');
+                if (overlay) overlay.remove();
+            }
         };
 
         window.checkAdmin = function() {
